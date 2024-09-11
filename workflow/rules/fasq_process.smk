@@ -22,31 +22,31 @@ rule align_both_bb:
 
 
 def get_gtf_name(wildcards):
-        gtf_name_param = wildcards.org + "_gtf"
+        gtf_name_param = wildcards.current_organism + "_gtf"
         return {"orig_gtf": config["paths"][gtf_name_param]}
 rule rename_chomosomes_gtf:
         input:
                 unpack(get_gtf_name)
         output:
-                renamed_gtf = "{out_path}/{org}_ref_prepared/{org}_genes.gtf"
+                renamed_gtf = "{out_path}/{current_organism}_ref_prepared/{current_organism}_genes.gtf"
         shell: """
-                cat <(grep '^#' {input.orig_gtf}) <(grep -v '^#' {input.orig_gtf}  | sed 's/^/{wildcards.org}_/g') > {output.renamed_gtf}
+                cat <(grep '^#' {input.orig_gtf}) <(grep -v '^#' {input.orig_gtf}  | sed 's/^/{wildcards.current_organism}_/g') > {output.renamed_gtf}
         """
 
 
 def get_ref_name(wildcards):
-	ref_name_param = wildcards.org + "_ref"
+	ref_name_param = wildcards.current_organism + "_ref"
 	return {"orig_ref": config["paths"][ref_name_param]}
 
 rule rename_chromosomes_fasta:
 	input: 
 		unpack(get_ref_name)
 	output:
-		renamed_fasta = "{out_path}/{org}_ref_prepared/{org}_genome.fa"
+		renamed_fasta = "{out_path}/{current_organism}_ref_prepared/{current_organism}_genome.fa"
 	conda: "../envs/himer_align.yaml"
         params:
                 rename_reads = config["paths"]["bb_tools"] + "/rename.sh"
-	shell:"{params.rename_reads} in={input.orig_ref} out={output.renamed_fasta} prefix={wildcards.org} addprefix=t addunderscore=t -Xmx20g"
+	shell:"{params.rename_reads} in={input.orig_ref} out={output.renamed_fasta} prefix={wildcards.current_organism} addprefix=t addunderscore=t -Xmx20g"
 
 
 def get_genome_files(wildcards):
