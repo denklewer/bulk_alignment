@@ -15,7 +15,8 @@ rule all:
 
 
 def get_files_for_multiqc(wildcards):
-	existing_samples = glob_wildcards(os.path.join(config["paths"]["data_folder"], "sample{id,[^_]+}_R1_001.fastq.gz")).id
+	existing_samples = ["1"]
+		#glob_wildcards(os.path.join(config["paths"]["data_folder"], "sample{id,[^_]+}_R1_001.fastq.gz")).id
 	#gw = glob_wildcards(os.path.join(config["paths"]["data_folder"], "{sample}_R1_001.fastq.gz"))
 	#infer_files = expand("{out_path}/qc_logs/rseqc/{sample}_" + "_".join(config["orgs"]) + "/mouse_infer_experiment.txt",
 	#	out_path = wildcards.out_path,
