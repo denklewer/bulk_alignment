@@ -2,7 +2,7 @@ configfile : "config/config.yaml"
 
 import os.path
 
-sample= 1
+
 rule run_star:
     input:
         first_org_read_1 = config["paths"]["data_folder"] + "/{sample}_R1_001.fastq.gz",
