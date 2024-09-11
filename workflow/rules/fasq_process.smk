@@ -48,18 +48,21 @@ rule rename_chromosomes_fasta:
 	shell:"{params.rename_reads} in={input.orig_ref} out={output.renamed_fasta} prefix={wildcards.org} addprefix=t addunderscore=t -Xmx20g"
 
 
-
+def get_genome_files(wildcards):
+    return expand(
+                "{out_path} / {current_organism}_ref_prepared / {current_organism}_genome.fa",
+                current_organism=config["orgs"], out_path= wildcards.out_path
+            )
+def get_gtf_files(wildcards):
+    return expand(
+                "{out_path}/{current_organism}_ref_prepared/{current_organism}_genes.gtf",
+                current_organism=config["orgs"], out_path= wildcards.out_path
+            )
 
 rule dumb_merge_genomes:
         input:
-            ref_files = expand(
-                "{wildcards.out_path} / {current_organism}_ref_prepared / {current_organism}_genome.fa",
-                current_organism=config["orgs"]
-            ),
-            gtf_files = expand(
-                "{wildcards.out_path}/{current_organism}_ref_prepared/{current_organism}_genes.gtf",
-                current_organism=config["orgs"]
-            )
+            ref_files = get_genome_files,
+            gtf_files = get_gtf_files
         output:
                 chimeric_fa = "{out_path}/concatenate_ref/" + "_".join(config["orgs"]) +".fa",
                 chimeric_gtf = "{out_path}/concatenate_ref/" + "_".join(config["orgs"]) + ".gtf"
