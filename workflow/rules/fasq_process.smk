@@ -54,11 +54,11 @@ rule dumb_merge_genomes:
         input:
             ref_files = expand(
                 "{out_path} / {current_organism}_ref_prepared / {current_organism}_genome.fa",
-                current_organism=config["orgs"]
+                current_organism=config["orgs"], out_path = wildcards.out_path
             ),
             gtf_files = expand(
                 "{out_path}/{current_organism}_ref_prepared/{current_organism}_genes.gtf",
-                current_organism=config["orgs"]
+                current_organism=config["orgs"], wildcards.out_path
             )
         output:
                 chimeric_fa = "{out_path}/concatenate_ref/" + "_".join(config["orgs"]) +".fa",
