@@ -27,5 +27,6 @@ rule run_star:
         --outSAMtype BAM SortedByCoordinate \
         --outSAMunmapped Within \
         --outSAMattributes Standard \
+        --readFilesCommand zcat
         """
 
