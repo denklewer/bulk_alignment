@@ -67,9 +67,9 @@ rule dumb_merge_genomes:
                 chimeric_fa = "{out_path}/concatenate_ref/" + "_".join(config["orgs"]) +".fa",
                 chimeric_gtf = "{out_path}/concatenate_ref/" + "_".join(config["orgs"]) + ".gtf"
         shell: """
-                cat %s > {output.chimeric_fa}
-                cat %s > {output.chimeric_gtf}
-                """.format(" ".join(input.ref_files),  " ".join(input.gtf_files))
+                cat {ref_files} > {output.chimeric_fa}
+                cat {gtf_files} > {output.chimeric_gtf}
+                """
 
 #not working
 #rule splt_org_paired_fq:
