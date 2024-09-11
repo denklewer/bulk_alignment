@@ -12,7 +12,7 @@ rule use_fastqc:
 
 rule generate_bed_file:
 	input:
-		gtf_file = config["genome_files"][config["org"]]["gtf"]
+		gtf_file = config["paths"]["genome_files"][config["org"]]["gtf"]
 	output:
 		bed_file = "{out_path}/generated.bed"
 	conda: "../envs/himer_align.yaml"

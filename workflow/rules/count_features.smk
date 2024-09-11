@@ -2,7 +2,7 @@ configfile : "config/config.yaml"
 
 rule featureCounts:
     input:
-        gtf_file = config["genome_files"][config["org"]]["gtf"],
+        gtf_file = config["paths"]["genome_files"][config["org"]]["gtf"],
         sorted_bam = rules.run_star.output.sorted_bam #  "{out_path}/{sample}_" + config["org"]  + "/star_aligned/Aligned.sortedByCoord.out.bam"
     output:
         counts = "{out_path}/{sample}_"+ config["org"] + "/counts/counts.txt",
