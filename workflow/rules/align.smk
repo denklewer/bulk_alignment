@@ -23,7 +23,7 @@ rule run_star:
         STAR --genomeDir {params.star_genome_dir} \
         --runThreadN {threads} \
         --readFilesIn {input.first_org_read_1} {input.first_org_read_2}\
-        --outFileNamePrefix {params.aligned_dir}  \
+        --outFileNamePrefix {params.aligned_dir}/  \
         --outSAMtype BAM SortedByCoordinate \
         --outSAMunmapped Within \
         --outSAMattributes Standard \
