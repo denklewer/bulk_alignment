@@ -9,5 +9,6 @@ paths:
         human_gtf: "/scratch1/fs1/martyomov/maksim/permanent/scn-pipeline_storage_2/resources/cellranger/hs/genes/genes.gtf"
         mouse_ref: "/scratch1/fs1/martyomov/maksim/permanent/scn-pipeline_storage_2/resources/cellranger/mm/fasta/genome.fa"
         mouse_gtf: "/scratch1/fs1/martyomov/maksim/permanent/scn-pipeline_storage_2/resources/cellranger/mm/genes/genes.gtf"
+
         cho_ref: "/scratch1/fs1/martyomov/maksim/permanent/rnaseq/shannon_CHO/cho_ref/data/GCF_003668045.3/FromUcsc/GCF_003668045.3.fa"
         cho_gtf: "/scratch1/fs1/martyomov/maksim/permanent/rnaseq/shannon_CHO/cho_ref/data/GCF_003668045.3/FromUcsc/GCF_003668045.3_CriGri-PICRH-1.0.ncbiRefSeq.gtf"

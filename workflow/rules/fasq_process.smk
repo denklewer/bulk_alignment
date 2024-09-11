@@ -37,6 +37,7 @@ rule rename_chomosomes_gtf:
 def get_ref_name(wildcards):
 	ref_name_param = wildcards.org + "_ref"
 	return {"orig_ref": config["paths"][ref_name_param]}
+
 rule rename_chromosomes_fasta:
 	input: 
 		unpack(get_ref_name)
@@ -50,7 +51,7 @@ rule rename_chromosomes_fasta:
 
 def get_genome_files(wildcards):
     return expand(
-                "{out_path} / {current_organism}_ref_prepared / {current_organism}_genome.fa",
+                "{out_path}/{current_organism}_ref_prepared/{current_organism}_genome.fa",
                 current_organism=config["orgs"], out_path= wildcards.out_path
             )
 def get_gtf_files(wildcards):

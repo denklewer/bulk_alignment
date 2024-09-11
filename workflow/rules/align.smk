@@ -39,12 +39,12 @@ rule get_star_index:
 
 rule run_chimeric_star:
 	input:
-		first_org_read_1 = "{out_path}/{sample}_{first_org}_{second_org}/{sample}_{org}_R1.fq",
-		first_org_read_2 = "{out_path}/{sample}_{first_org}_{second_org}/{sample}_{org}_R2.fq",
-		chimeric_sjdb = rules.get_star_index.output.star_sjdb_list_from_gtf_out
+		first_org_read_1 = "{out_path}/{sample}_" +"_".join(config["orgs"]) + "/{sample}_{org}_R1.fq",
+		first_org_read_2 = "{out_path}/{sample}_" +"_".join(config["orgs"]) + "/{sample}_{org}_R2.fq",
+		chimeric_sjdb =  "/scratch1/fs1/martyomov/maksim/permanent/scn-pipeline_storage_2/resources/star/mm/sjdbList.fromGTF.out.tab"
 	output:
-		sorted_bam = "{out_path}/{sample}_{first_org}_{second_org}/{org}_star_aligned/Aligned.sortedByCoord.out.bam",
-		sj_file = "{out_path}/{sample}_{first_org}_{second_org}/{org}_star_aligned/SJ.out.tab"
+		sorted_bam = "{out_path}/{sample}_" + "_".join(config["orgs"]) + "/{org}_star_aligned/Aligned.sortedByCoord.out.bam",
+		sj_file = "{out_path}/{sample}_" + "_".join(config["orgs"]) + "/{org}_star_aligned/SJ.out.tab"
 	conda: "../envs/himer_align.yaml"
 	resources:
         	mem_mb=64000
@@ -57,7 +57,10 @@ rule run_chimeric_star:
 		STAR --genomeDir {params.star_genome_dir} \
 		--runThreadN {threads} \
 		--readFilesIn {input.first_org_read_1} {input.first_org_read_2}\
-		--outFileNamePrefix {wildcards.out_path}/{wildcards.sample}_{wildcards.first_org}_{wildcards.second_org}/{wildcards.org}_star_aligned/ \
+		""" + \
+        "--outFileNamePrefix {wildcards.out_path}/{wildcards.sample}_" +"_".join(config["orgs"])  + " /{wildcards.org}_star_aligned/ " + \
+        """
+        \
 		--outSAMtype BAM SortedByCoordinate \
 		--outSAMunmapped Within \
 		--outSAMattributes Standard \
