@@ -20,15 +20,15 @@ def get_files_for_multiqc(wildcards):
 	#	out_path = wildcards.out_path,
 	#	sample = gw.sample
 	#	)
-	infer_files = expand("{out_path}/qc_logs/rseqc/{sample}_" + config["org"] + "/infer_experiment.txt",
+	infer_files = expand("{out_path}/qc_logs/rseqc/sample{sample}_" + config["org"] + "/infer_experiment.txt",
 	       out_path = wildcards.out_path,
 	       sample = existing_samples
                )
-	fastqc_files = expand("{out_path}/qc_logs/fastqc/{sample}_R{n}_001_fastqc.html",
+	fastqc_files = expand("{out_path}/qc_logs/fastqc/sample{sample}_R{n}_001_fastqc.html",
 		out_path = wildcards.out_path,
 		sample=existing_samples,
 		n=[1,2])
-	cov_genes = expand("{out_path}/qc_logs/rseqc/{sample}_"+ config["org"] +"/geneBodyCoverage.txt",
+	cov_genes = expand("{out_path}/qc_logs/rseqc/sample{sample}_"+ config["org"] +"/geneBodyCoverage.txt",
            out_path = wildcards.out_path,
            sample=existing_samples)
 	return infer_files + fastqc_files + cov_genes

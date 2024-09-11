@@ -4,12 +4,12 @@ import os.path
 
 rule run_star:
     input:
-        first_org_read_1 = config["paths"]["data_folder"] + "/{current_sample}_R1_001.fastq.gz",
-        first_org_read_2 =  config["paths"]["data_folder"] + "/{current_sample}_R2_001.fastq.gz",
+        first_org_read_1 = config["paths"]["data_folder"] + "/sample{current_sample}_R1_001.fastq.gz",
+        first_org_read_2 =  config["paths"]["data_folder"] + "/sample{current_sample}_R2_001.fastq.gz",
         sjdb =  config["paths"]["star_preprocessed_files"][config["org"]]["sjdbList"]
     output:
-        sorted_bam = "{out_path}/{current_sample}_" + config["org"]  + "/star_aligned/Aligned.sortedByCoord.out.bam",
-        sj_file = "{out_path}/{current_sample}_" + config["org"] + "/star_aligned/SJ.out.tab"
+        sorted_bam = "{out_path}/sample{current_sample}_" + config["org"]  + "/star_aligned/Aligned.sortedByCoord.out.bam",
+        sj_file = "{out_path}/sample{current_sample}_" + config["org"] + "/star_aligned/SJ.out.tab"
     conda: "../envs/himer_align.yaml"
     resources:
             mem_mb=64000
