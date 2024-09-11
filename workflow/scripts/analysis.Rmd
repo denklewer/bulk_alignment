@@ -1,0 +1,974 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+library(data.table)
+meta <- fread('/scratch1/fs1/martyomov/maksim/permanent/rnaseq/shannon_CHO/Descr_matr.txt', sep = '\t', quote = FALSE)
+exp_dir <- '/scratch1/fs1/martyomov/maksim/permanent/rnaseq/shannon_CHO'
+
+
+meta$Samples_Identifier <- sub(pattern = '(S)(0+)(\\d+)',replacement = '\\1\\3', x = meta$Samples_Identifier)
+meta$N <- NULL
+rownames(meta) <- meta$Samples_Identifier
+
+
+org1 = 'cho'
+org2 = 'human'
+count_files <- file.path(exp_dir, paste(meta$Samples_Identifier,org1, org2, sep= '_'), paste(org1, 'counts', sep = '_'), 'counts.txt')
+
+all_counts <- list()
+
+for (x in count_files) {
+  counts <- fread(x, stringsAsFactors = F, header = TRUE)
+  rownames(counts) <- counts$Geneid
+  sample_id <- sub(pattern = paste0(exp_dir, '/(\\w+)_', org1, '_', org2,'/cho_counts/counts.txt'), replacement = '\\1', x = x)
+  org1_genes <- startsWith(x = counts$Chr,prefix = org1)
+  names(counts) <- c(names(counts)[-ncol(counts)], sample_id)
+  print('=================')
+  print(paste('SAMPLE: ', sample_id))
+  print('------------------')
+  print( paste('org1 genes :', sum(org1_genes)))
+  print(paste('org1 expression :', sum(counts[org1_genes,][[sample_id]])))
+  print(paste('org2 expression :', sum(counts[!org1_genes,][[sample_id]])))
+ 
+  all_counts[[sample_id]]<-counts[org1_genes,][[sample_id]] 
+}
+all_counts <- as.data.frame(all_counts)
+rn <-counts[org1_genes,]$Geneid
+rownames(all_counts) <- rn
+
+rowdata <- data.frame(ncbiRefSeq = rn, row.names = rn)
+coldata <- meta
+
+
+saveRDS(list(counts = all_counts, rowdata = rowdata, coldata = coldata), file = '/scratch1/fs1/martyomov/maksim/permanent/rnaseq/shannon_CHO/all_expr_data.rds')
+```
+
+
+
+```{r}
+
+org1 = 'cho'
+org2 = 'human'
+count_files <- file.path(exp_dir, paste(meta$Samples_Identifier,org1, org2, sep= '_'), paste(org1, 'counts', sep = '_'), 'counts.txt')
+
+all_counts <- list()
+
+for (x in count_files) {
+  counts <- fread(x, stringsAsFactors = F, header = TRUE)
+  rownames(counts) <- counts$Geneid
+  sample_id <- sub(pattern = paste0(exp_dir, '/(\\w+)_', org1, '_', org2,'/cho_counts/counts.txt'), replacement = '\\1', x = x)
+  org1_genes <- startsWith(x = counts$Chr,prefix = org1)
+  names(counts) <- c(names(counts)[-ncol(counts)], sample_id)
+  print('=================')
+  print(paste('SAMPLE: ', sample_id))
+  print('------------------')
+  print( paste('org1 genes :', sum(org1_genes)))
+  print(paste('org1 expression :', sum(counts[org1_genes,][[sample_id]])))
+  print(paste('org2 expression :', sum(counts[!org1_genes,][[sample_id]])))
+ 
+  all_counts[[sample_id]]<-counts[org1_genes,][[sample_id]] 
+}
+all_counts <- as.data.frame(all_counts)
+rn <-counts[org1_genes,]$Geneid
+rownames(all_counts) <- rn
+
+rowdata <- data.frame(ncbiRefSeq = rn, row.names = rn)
+coldata <- meta
+
+
+saveRDS(list(counts = all_counts, rowdata = rowdata, coldata = coldata), file = '/scratch1/fs1/martyomov/maksim/permanent/rnaseq/shannon_CHO/all_expr_data.rds')
+
+```
+```{r}
+pca_plots <- list()
+```
+
+
+```{r}
+library(DESeq2)
+dds <- DESeqDataSetFromMatrix(all_counts, colData = coldata, design=~1)
+dds <- DESeq(dds)
+rld <- rlogTransformation(dds)
+library(PCAtools)
+pcaData <- PCAtools::pca(counts(dds, normalized = TRUE), metadata=coldata) 
+pca_plots$all_counts_normalized <- biplot(pcaData, colby = "Genotype", shape = "Engulfment", legendPosition = "right") + ggtitle("All samples all counts deseq normalized")
+plot(pca_plots$all_counts_normalized)
+pcaData <- PCAtools::pca(assay(rld), metadata=coldata) 
+pca_plots$rlog_all <- biplot(pcaData, colby = "Genotype",  shape = "Engulfment", legendPosition = "right") + ggtitle("All samples all counts rlog")
+plot(pca_plots$rlog_all)
+
+```
+
+
+```{r}
+library(data.table)
+bad_samples <- c("S24", "S31", "S27")
+coldata <- as.data.frame(coldata[!coldata$Samples_Identifier %in% bad_samples, ])
+rownames(coldata) <- coldata$Samples_Identifier
+all_counts <- all_counts[, ! colnames(all_counts) %in% bad_samples]
+
+coldata$Genotype <- factor(coldata$Genotype, levels = c("WT", "KO"))
+coldata$Engulfment <- factor(coldata$Engulfment, levels = c("alone", "eating"))
+coldata$time <- factor(coldata$time, levels = c("2h","4h")) 
+coldata$Conditions <- relevel(factor(coldata$Conditions), ref = "ctrl_alone_4h")
+coldata$treatment <- paste(coldata$Engulfment, coldata$time, sep= "_")
+coldata$treatment <- relevel(factor(coldata$treatment), ref = "alone_4h")
+dds <- DESeqDataSetFromMatrix(all_counts, colData = coldata, design=~Conditions)
+smallestGroupSize <- 3
+keep <- rowSums(counts(dds) >= 10) >= smallestGroupSize
+dds <- dds[keep,]
+dds <- DESeq(dds)
+rld <- rlogTransformation(dds)
+library(PCAtools)
+pcaData <- PCAtools::pca(counts(dds, normalized = TRUE), metadata=coldata) 
+pca_plots$clean_norm <- biplot(pcaData, colby = "Genotype", shape = "Engulfment", legendPosition = "right") + ggtitle("Without outliers all counts")
+plot(pca_plots$clean_norm)
+pcaData <- PCAtools::pca(assay(rld), metadata=coldata) 
+pca_plots$clean_rlog <- biplot(pcaData, colby = "Genotype",  shape = "Engulfment", legendPosition = "right") + ggtitle ("Without outliers all counts rlog")
+
+plot(pca_plots$clean_rlog )
+
+means <- apply(assay(rld), 1, mean)
+means <- sort(means, decreasing = TRUE)
+means <- means[1:(ifelse(length(means) < 12000 ,yes = length(means), no = 12000))]
+filt_vector <- rownames(rld) %in% names(means) 
+rld_12k <- rld[filt_vector,]
+
+pcaData <- PCAtools::pca(assay(rld_12k), metadata=coldata) 
+pca_plots$rld_12k <- biplot(pcaData,  shape = "Genotype", colby = "treatment", legendPosition = "right", title = "Without outliers top12k genes rlog")
+plot(pca_plots$rld_12k)
+
+```
+
+
+
+
+```{r}
+
+library(Biobase)
+library(dplyr)
+
+
+fData <- data.frame(ncbiRefSeq = rownames(all_counts))
+
+rownames(fData) <- fData$ncbiRefSeq
+## do annotaiton that will be displayed in phantasus
+## your annotation can be different from the example
+
+pData <- as.data.frame(meta)
+rownames(pData) <- colnames(all_counts)
+
+
+metadata <- data.frame(labelDescription=names(pData),
+                       row.names=names(pData))
+phenoData <- new("AnnotatedDataFrame", data=pData, varMetadata=metadata)
+
+metadata <- data.frame(labelDescription=c("ncbiRefSeq"),
+                       row.names=c("ncbiRefSeq"))
+featureData <- new("AnnotatedDataFrame", data=fData, varMetadata=metadata)
+
+
+    ed <- new ("MIAME",
+              name="Shannon_LR73_full",
+              lab="",
+              title="Chinese Hamster fibroblast (CHO species) cell line called LR73 were used as phagocytes and fed apoptotic human Jurkat T cells.",
+              contact="",
+              pubMedIds="",
+              url="",
+              other=list())
+
+## create object
+eset <- ExpressionSet(assayData = as.matrix(all_counts), phenoData = phenoData, featureData = featureData, experimentData = ed)
+ess <- list(chikv_cluster_cond=eset)
+
+
+save(ess, file="/scratch1/fs1/martyomov/maksim/permanent/rnaseq/shannon_CHO/phantasus_obj/shannon_LR73_full_maksim_iehahQua.rda", version = 2)
+
+```
+
+
+
+
+
+
+```{r}
+other_plots <- list()
+library(edgeR)
+norm_counts <- log1p(cpm(all_counts))
+norm_counts <- as.data.frame(all_counts)
+colnames(all_counts) <- colnames(all_counts)
+findoutlier <- function(x) {
+  return(x < quantile(x, .25) - 1.5*IQR(x) | x > quantile(x, .75) + 1.5*IQR(x))
+}
+coldata$treatment <- paste(coldata$Engulfment, coldata$time, sep= "_")
+dat <- data.frame( t(norm_counts[rowdata$ncbiRefSeq == "Ptpn11",]),coldata$Genotype, coldata$treatment) 
+colnames(dat) <- c("Ptpn11", "genotype", "treatment")
+rownames(dat) <- rownames(coldata)
+dat$sample <- rownames(dat)
+library(dplyr)
+dat <- dat %>% group_by(genotype, treatment) %>% mutate(outlier = ifelse(findoutlier(Ptpn11), sample, NA))
+other_plots$ptpn11 <- ggplot( data =  dat, aes( x = treatment, y = Ptpn11 )) + geom_boxplot(aes(fill = genotype)) + geom_text(aes(label=outlier), na.rm=TRUE, hjust=-.5) + ggtitle("Ptpn11 expression")
+plot(other_plots$ptpn11)
+```
+
+
+
+just compare KO vs WT
+```{r}
+de_plots <- list()
+
+
+
+dds_all<- DESeqDataSetFromMatrix(all_counts, colData = coldata, design=~Genotype)
+dds_all <- estimateSizeFactors(dds_all)
+dds_all <- DESeq(dds_all)
+#plotDispEsts(dds_alone)
+
+
+dds_all_res <- results(dds_all, contrast = c("Genotype","KO", "WT" ), cooksCutoff = FALSE )
+
+dds_all_res$ncbiRefSeq <- rowdata[rownames(dds_all_res),]
+dds_all_res <- as.data.frame(dds_all_res)
+
+de_plots$all_KOvsWT <- ggplot(dds_all_res, aes(x=log2FoldChange, y=-log10(padj), color=padj < 0.05)) +
+  geom_point() + theme_bw() + scale_color_manual(values=c("black", "red")) +
+  geom_text_repel(data=dds_all_res %>% dplyr::filter(padj < 0.05), aes(label=ncbiRefSeq, color=NULL)) + ggtitle ("KO vs WT in all samples")
+plot(de_plots$all_KOvsWT)
+
+
+
+cur_shr <- lfcShrink(dds_all, coef= "Genotype_KO_vs_WT", type = "apeglm")
+
+dds_all_res$log2FoldChange <- cur_shr$log2FoldChange
+dds_all_res$lfcSE <- cur_shr$lfcSE
+
+de_plots$all_KOvsWT_apeglm <- 
+ggplot(dds_all_res, aes(x=log2FoldChange, y=-log10(padj), color=padj < 0.05)) +
+  geom_point() + theme_bw() + scale_color_manual(values=c("black", "red")) +
+  geom_text_repel(data=dds_all_res %>% dplyr::filter(padj < 0.05), aes(label=ncbiRefSeq, color=NULL)) + ggtitle ("KO vs WT in all samples(apeglm)")
+plot(de_plots$all_KOvsWT_apeglm)
+
+```
+
+
+
+compare wt vs KO by eated/uneated
+
+```{r}
+
+alone_samples <- coldata$Engulfment == 'alone'
+alone_coldata <- as.data.frame(coldata[alone_samples,])
+rownames(alone_coldata) <- alone_coldata$Samples_Identifier
+alone_counts <- all_counts[, alone_samples]
+dds_alone <- DESeqDataSetFromMatrix(alone_counts, colData = alone_coldata, design=~Genotype)
+dds_alone <- estimateSizeFactors(dds_alone)
+dds_alone <- DESeq(dds_alone)
+#plotDispEsts(dds_alone)
+
+
+dds_alone_res <- results(dds_alone, contrast = c("Genotype","KO", "WT" ), cooksCutoff = FALSE )
+
+dds_alone_res$ncbiRefSeq <- rowdata[rownames(dds_alone_res),]
+dds_alone_res <- as.data.frame(dds_alone_res)
+
+de_plots$alone_KOvsWT <- ggplot(dds_alone_res, aes(x=log2FoldChange, y=-log10(padj), color=padj < 0.05)) +
+  geom_point() + theme_bw() + scale_color_manual(values=c("black", "red")) +
+  geom_text_repel(data=dds_alone_res %>% dplyr::filter(padj < 0.05), aes(label=ncbiRefSeq, color=NULL)) + ggtitle ("KO vs WT in alone group")
+plot(de_plots$alone_KOvsWT)
+
+
+
+cur_shr <- lfcShrink(dds_alone, coef= "Genotype_KO_vs_WT", type = "apeglm")
+
+dds_alone_res$log2FoldChange <- cur_shr$log2FoldChange
+dds_alone_res$lfcSE <- cur_shr$lfcSE
+
+de_plots$alone_KOvsWT_apeglm <- ggplot(dds_alone_res, aes(x=log2FoldChange, y=-log10(padj), color=padj < 0.05)) +
+  geom_point() + theme_bw() + scale_color_manual(values=c("black", "red")) +
+  geom_text_repel(data=dds_alone_res %>% dplyr::filter(padj < 0.05), aes(label=ncbiRefSeq, color=NULL)) + ggtitle ("KO vs WT in alone group(apeglm)")
+plot(de_plots$alone_KOvsWT_apeglm)
+
+
+
+
+alone_2h_samples <- (coldata$Engulfment == 'alone' & coldata$time =='2h')
+
+
+alone_2h_coldata <- as.data.frame(coldata[alone_2h_samples,])
+rownames(alone_2h_coldata) <- alone_2h_coldata$Samples_Identifier
+alone_2h_counts <- all_counts[, alone_2h_samples]
+dds_alone_2h <- DESeqDataSetFromMatrix(alone_2h_counts, colData = alone_2h_coldata, design=~Genotype)
+dds_alone_2h <- estimateSizeFactors(dds_alone_2h)
+dds_alone_2h <- DESeq(dds_alone_2h)
+#plotDispEsts(dds_alone)
+
+
+dds_alone_2h_res <- results(dds_alone_2h, contrast = c("Genotype","KO", "WT" ), cooksCutoff = FALSE )
+
+dds_alone_2h_res$ncbiRefSeq <- rowdata[rownames(dds_alone_2h_res),]
+dds_alone_2h_res <- as.data.frame(dds_alone_2h_res)
+
+de_plots$alone_2h_KOvsWT <- ggplot(dds_alone_2h_res, aes(x=log2FoldChange, y=-log10(padj), color=padj < 0.05)) +
+  geom_point() + theme_bw() + scale_color_manual(values=c("black", "red")) +
+  geom_text_repel(data=dds_alone_2h_res %>% dplyr::filter(padj < 0.05), aes(label=ncbiRefSeq, color=NULL)) + ggtitle ("KO vs WT in alone 2h group")
+plot(de_plots$alone_2h_KOvsWT)
+
+
+
+cur_shr <- lfcShrink(dds_alone_2h, coef= "Genotype_KO_vs_WT", type = "apeglm")
+
+dds_alone_2h_res$log2FoldChange <- cur_shr$log2FoldChange
+dds_alone_2h_res$lfcSE <- cur_shr$lfcSE
+
+de_plots$alone_2h_KOvsWT_apeglm <- 
+ggplot(dds_alone_2h_res, aes(x=log2FoldChange, y=-log10(padj), color=padj < 0.05)) +
+  geom_point() + theme_bw() + scale_color_manual(values=c("black", "red")) +
+  geom_text_repel(data=dds_alone_2h_res %>% dplyr::filter(padj < 0.05), aes(label=ncbiRefSeq, color=NULL)) + ggtitle ("KO vs WT in alone 2h group(apeglm)")
+plot(de_plots$alone_2h_KOvsWT_apeglm)
+
+#----------
+# 4h subset
+#---------
+alone_4h_samples <- coldata$Engulfment == 'alone' & coldata$time =='4h'
+alone_4h_coldata <- as.data.frame(coldata[alone_4h_samples,])
+rownames(alone_4h_coldata) <- alone_4h_coldata$Samples_Identifier 
+alone_4h_counts <- all_counts[, alone_4h_samples]
+dds_alone_4h <- DESeqDataSetFromMatrix(alone_4h_counts, colData = alone_4h_coldata, design=~Genotype)
+dds_alone_4h <- estimateSizeFactors(dds_alone_4h)
+dds_alone_4h <- DESeq(dds_alone_4h)
+#plotDispEsts(dds_alone)
+
+
+dds_alone_4h_res <- results(dds_alone_4h, contrast = c("Genotype","KO", "WT" ), cooksCutoff = FALSE )
+
+dds_alone_4h_res$ncbiRefSeq <- rowdata[rownames(dds_alone_4h_res),]
+dds_alone_4h_res <- as.data.frame(dds_alone_4h_res)
+
+de_plots$alone_4h_KOvsWT <- ggplot(dds_alone_4h_res, aes(x=log2FoldChange, y=-log10(padj), color=padj < 0.05)) +
+  geom_point() + theme_bw() + scale_color_manual(values=c("black", "red")) +
+  geom_text_repel(data=dds_alone_4h_res %>% dplyr::filter(padj < 0.05), aes(label=ncbiRefSeq, color=NULL)) + ggtitle ("KO vs WT in alone 4h group")
+plot(de_plots$alone_4h_KOvsWT)
+
+
+
+cur_shr <- lfcShrink(dds_alone_4h, coef= "Genotype_KO_vs_WT", type = "apeglm")
+
+dds_alone_4h_res$log2FoldChange <- cur_shr$log2FoldChange
+dds_alone_4h_res$lfcSE <- cur_shr$lfcSE
+
+de_plots$alone_4h_KOvsWT_apeglm <- 
+ggplot(dds_alone_4h_res, aes(x=log2FoldChange, y=-log10(padj), color=padj < 0.05)) +
+  geom_point() + theme_bw() + scale_color_manual(values=c("black", "red")) +
+  geom_text_repel(data=dds_alone_4h_res %>% dplyr::filter(padj < 0.05), aes(label=ncbiRefSeq, color=NULL)) + ggtitle ("KO vs WT in alone 4h group(apeglm)")
+plot(de_plots$alone_4h_KOvsWT_apeglm)
+
+
+
+# =================
+# EATED SAMPLES
+# =================
+eated_samples <- !alone_samples
+eated_coldata <- as.data.frame(coldata[eated_samples,])
+rownames(eated_coldata) <- eated_coldata$Samples_Identifier
+eated_counts <- all_counts[, eated_samples]
+dds_eated <- DESeqDataSetFromMatrix(eated_counts, colData = eated_coldata, design=~Genotype)
+dds_eated <- estimateSizeFactors(dds_eated)
+dds_eated <- estimateDispersions(dds_eated)
+dds_eated <- DESeq(dds_eated)
+plotDispEsts(dds_eated)
+
+
+
+
+dds_eated_res <- results(dds_eated, contrast = c("Genotype","KO", "WT" ), cooksCutoff = FALSE )
+
+dds_eated_res$ncbiRefSeq <- rowdata[rownames(dds_eated_res),]
+dds_eated_res <- as.data.frame(dds_eated_res)
+
+de_plots$eated_KOvsWT <- ggplot(dds_eated_res, aes(x=log2FoldChange, y=-log10(padj), color=padj < 0.05)) +
+  geom_point() + theme_bw() + scale_color_manual(values=c("black", "red")) +
+  geom_text_repel(data=dds_eated_res %>% dplyr::filter(padj < 0.05), aes(label=ncbiRefSeq, color=NULL)) + ggtitle ("KO vs WT in eated group")
+
+plot(de_plots$eated_KOvsWT)
+
+cur_shr <- lfcShrink(dds_eated, coef= "Genotype_KO_vs_WT", type = "apeglm")
+
+dds_eated_res$log2FoldChange <- cur_shr$log2FoldChange
+dds_eated_res$lfcSE <- cur_shr$lfcSE
+
+
+de_plots$eated_KOvsWT_apeglm <- ggplot(dds_eated_res, aes(x=log2FoldChange, y=-log10(padj), color=padj < 0.05)) +
+  geom_point() + theme_bw() + scale_color_manual(values=c("black", "red")) +
+  geom_text_repel(data=dds_eated_res %>% dplyr::filter(padj < 0.05), aes(label=ncbiRefSeq, color=NULL)) + ggtitle ("KO vs WT in eated group(apeglm)")
+plot(de_plots$eated_KOvsWT_apeglm)
+
+
+#------
+# 2h subset
+#------
+
+eated_2h_samples <- (!alone_samples) & coldata$time =='2h'
+eated_2h_coldata <- as.data.frame(coldata[eated_2h_samples,])
+rownames(eated_2h_coldata) <- eated_2h_coldata$Samples_Identifier
+eated_2h_counts <- all_counts[, eated_2h_samples]
+dds_eated_2h <- DESeqDataSetFromMatrix(eated_2h_counts, colData = eated_2h_coldata, design=~Genotype)
+dds_eated_2h <- estimateSizeFactors(dds_eated_2h)
+dds_eated_2h <- estimateDispersions(dds_eated_2h)
+dds_eated_2h <- DESeq(dds_eated_2h)
+plotDispEsts(dds_eated_2h)
+
+
+
+
+dds_eated_2h_res <- results(dds_eated_2h, contrast = c("Genotype","KO", "WT" ), cooksCutoff = FALSE )
+
+dds_eated_2h_res$ncbiRefSeq <- rowdata[rownames(dds_eated_2h_res),]
+dds_eated_2h_res <- as.data.frame(dds_eated_2h_res)
+
+de_plots$eated_2h_KOvsWT <- ggplot(dds_eated_2h_res, aes(x=log2FoldChange, y=-log10(padj), color=padj < 0.05)) +
+  geom_point() + theme_bw() + scale_color_manual(values=c("black", "red")) +
+  geom_text_repel(data=dds_eated_2h_res %>% dplyr::filter(padj < 0.05), aes(label=ncbiRefSeq, color=NULL)) + ggtitle ("KO vs WT in eated 2h group")
+
+plot(de_plots$eated_KOvsWT)
+
+cur_shr <- lfcShrink(dds_eated_2h, coef= "Genotype_KO_vs_WT", type = "apeglm")
+
+dds_eated_2h_res$log2FoldChange <- cur_shr$log2FoldChange
+dds_eated_2h_res$lfcSE <- cur_shr$lfcSE
+
+
+de_plots$eated_2h_KOvsWT_apeglm <- ggplot(dds_eated_2h_res, aes(x=log2FoldChange, y=-log10(padj), color=padj < 0.05)) +
+  geom_point() + theme_bw() + scale_color_manual(values=c("black", "red")) +
+  geom_text_repel(data=dds_eated_2h_res %>% dplyr::filter(padj < 0.05), aes(label=ncbiRefSeq, color=NULL)) + ggtitle ("KO vs WT in eated 2h group(apeglm)")
+plot(de_plots$eated_KOvsWT_apeglm)
+
+
+#------
+# 4h subset
+#------
+
+eated_4h_samples <- (!alone_samples) & coldata$time =='4h'
+eated_4h_coldata <- as.data.frame(coldata[eated_4h_samples,])
+rownames(eated_4h_coldata) <- eated_4h_coldata$Samples_Identifier
+eated_4h_counts <- all_counts[, eated_4h_samples]
+dds_eated_4h <- DESeqDataSetFromMatrix(eated_4h_counts, colData = eated_4h_coldata, design=~Genotype)
+dds_eated_4h <- estimateSizeFactors(dds_eated_4h)
+dds_eated_4h <- estimateDispersions(dds_eated_4h)
+dds_eated_4h <- DESeq(dds_eated_4h)
+plotDispEsts(dds_eated_4h)
+
+
+
+
+dds_eated_4h_res <- results(dds_eated_4h, contrast = c("Genotype","KO", "WT" ), cooksCutoff = FALSE )
+
+dds_eated_4h_res$ncbiRefSeq <- rowdata[rownames(dds_eated_4h_res),]
+dds_eated_4h_res <- as.data.frame(dds_eated_4h_res)
+
+de_plots$eated_4h_KOvsWT <- ggplot(dds_eated_4h_res, aes(x=log2FoldChange, y=-log10(padj), color=padj < 0.05)) +
+  geom_point() + theme_bw() + scale_color_manual(values=c("black", "red")) +
+  geom_text_repel(data=dds_eated_4h_res %>% dplyr::filter(padj < 0.05), aes(label=ncbiRefSeq, color=NULL)) + ggtitle ("KO vs WT in eated 2h group")
+
+plot(de_plots$eated_4h_KOvsWT)
+
+cur_shr <- lfcShrink(dds_eated_4h, coef= "Genotype_KO_vs_WT", type = "apeglm")
+
+dds_eated_4h_res$log2FoldChange <- cur_shr$log2FoldChange
+dds_eated_4h_res$lfcSE <- cur_shr$lfcSE
+
+
+de_plots$eated_4h_KOvsWT_apeglm <- ggplot(dds_eated_4h_res, aes(x=log2FoldChange, y=-log10(padj), color=padj < 0.05)) +
+  geom_point() + theme_bw() + scale_color_manual(values=c("black", "red")) +
+  geom_text_repel(data=dds_eated_4h_res %>% dplyr::filter(padj < 0.05), aes(label=ncbiRefSeq, color=NULL)) + ggtitle ("KO vs WT in eated 4h group(apeglm)")
+plot(de_plots$eated_KOvsWT_apeglm)
+
+```
+
+effects of time
+```{r}
+library("ggplot2")
+library(ggpubr)
+dds_time_alone <- DESeqDataSetFromMatrix(alone_counts, colData = alone_coldata, design=~Genotype + time + Genotype:time)
+dds_time_alone <- estimateSizeFactors(dds_time_alone)
+dds_time_alone <- estimateDispersions(dds_time_alone)
+dds_time_alone <- DESeq(dds_time_alone)
+dds_time_alone_res <- results(dds_time_alone, name ="GenotypeKO.time4h", cooksCutoff = FALSE )
+
+genes <- rownames(as.data.frame(dds_time_alone_res) %>% slice_min(padj, n = 15, na_rm = TRUE))
+effect_count = data.table()
+for (genotype in levels(dds_time_alone$Genotype)){
+  cur_dds <- dds_time_alone[,dds_time_alone$Genotype == genotype]
+ 
+  for(gene in genes){
+      d <- plotCounts(cur_dds, gene=gene, intgroup="time",
+                returnData=TRUE)
+      d$gene = gene
+      d$Genotype = genotype
+      effect_count <- rbind(effect_count,d)
+  }
+
+}
+pal =  get_palette( k = length(genes))
+de_plots$alone_time_effect <- ggplot(effect_count, aes(x=time, y=count, colour = gene)) + 
+  geom_point(position=position_jitter(w=0.1,h=0)) + geom_line(stat = "summary", fun = median, aes(group = gene)) +
+  scale_y_log10(breaks=c(25,100,400)) + facet_wrap(~Genotype) + ggtitle("Time effect in alone samples")
+dds_time_alone$sample_Genotype_time <- paste(dds_time_alone$Samples_Identifier,dds_time_alone$Genotype, dds_time_alone$time, sep = "_")
+
+de_plots$alone_time_effect_bar <- barplot(assay(dds_time_alone)[genes,],col = pal, names.arg =dds_time_alone$sample_Genotype_time ,las=2, main="counts of effect genes in alone sampels" )
+
+plot(de_plots$alone_time_effect)
+plot(de_plots$alone_time_effect_bar)
+
+# ===========
+# eated samples
+# ============
+
+dds_time_eated <- DESeqDataSetFromMatrix(eated_counts, colData = eated_coldata, design=~Genotype + time + Genotype:time)
+dds_time_eated <- estimateSizeFactors(dds_time_eated)
+dds_time_eated <- estimateDispersions(dds_time_eated)
+dds_time_eated <- DESeq(dds_time_eated)
+dds_time_eated_res <- results(dds_time_eated, name ="GenotypeKO.time4h", cooksCutoff = FALSE )
+
+genes <- rownames(as.data.frame(dds_time_eated_res) %>% slice_min(padj, n = 15, na_rm = TRUE))
+effect_count = data.table()
+for (genotype in levels(dds_time_eated$Genotype)){
+  cur_dds <- dds_time_eated[,dds_time_eated$Genotype == genotype]
+ 
+  for(gene in genes){
+      d <- plotCounts(cur_dds, gene=gene, intgroup="time",
+                returnData=TRUE)
+      d$gene = gene
+      d$Genotype = genotype
+      effect_count <- rbind(effect_count,d)
+  }
+
+}
+pal =  get_palette( k = length(genes))
+de_plots$eated_time_effect<- ggplot(effect_count, aes(x=time, y=count, colour = gene)) + scale_color_manual(values= pal)+ 
+  geom_point(position=position_jitter(w=0.1,h=0)) + geom_line(stat = "summary", fun = median, aes(group = gene)) +
+  scale_y_log10(breaks=c(25,100,400)) + facet_wrap(~Genotype) + ggtitle("Time effect in eated samples")
+
+dds_time_eated$sample_Genotype_time <- paste(dds_time_eated$Samples_Identifier,dds_time_eated$Genotype, dds_time_eated$time, sep = "_")
+
+de_plots$eated_time_effect_bar <- barplot(assay(dds_time_eated)[genes,],col = pal, names.arg =dds_time_eated$sample_Genotype_time ,las=2, main="counts of effect genes in eated samples" )
+
+plot(de_plots$eated_time_effect)
+plot(de_plots$eated_time_effect_bar)
+
+```
+
+
+
+
+
+
+get pathways
+```{r}
+library(msigdbr)
+library(data.table)
+library(fgsea)
+library(gridExtra)
+
+kegg_sets <- msigdbr(species = "Mus musculus", category = "C2",  subcategory = "CP:KEGG")
+react_sets <- msigdbr(species = "Mus musculus", category = "C2",  subcategory = "CP:REACTOME")
+wiki_sets <-  msigdbr(species = "Mus musculus", category = "C2",  subcategory = "CP:WIKIPATHWAYS")
+c2_sets <- rbind(kegg_sets, react_sets,wiki_sets )
+c2_sets <- data.table(c2_sets)
+c2_sets <- c2_sets[, .(sets = list(gene_symbol)), by = gs_name]
+c2_gene_sets <- c2_sets$sets 
+names(c2_gene_sets) <- c2_sets$gs_name
+
+hall_sets <- msigdbr(species = "Mus musculus", category = "H")
+hall_sets <- data.table(hall_sets)
+hall_sets <- hall_sets[, .(sets = list(gene_symbol)), by = gs_name]
+hall_gene_sets <- hall_sets$sets 
+names(hall_gene_sets) <- hall_sets$gs_name
+
+go_sets <- msigdbr(species = "Mus musculus", category = "C5", subcategory = "GO:BP" )
+go_sets <- data.table(go_sets)
+go_sets <- go_sets[, .(sets = list(gene_symbol)), by = gs_name]
+go_gene_sets <- go_sets$sets 
+names(go_gene_sets) <- go_sets$gs_name
+```
+
+
+```{r}
+library(data.table)
+padj_threshold <- 0.05
+fgsea_results <- function(cur_table, gene_sets){
+   inp_stats <- setNames(cur_table$stat, nm = cur_table$ncbiRefSeq)
+   fgsea_res <- fgsea(gene_sets, inp_stats)
+   fgsea_res <- fgsea_res[padj <= padj_threshold]
+   setorder(fgsea_res, padj)
+   if(nrow(fgsea_res) == 0){
+     print("!!! NO significant pathways !!!")
+   }
+   if(nrow(fgsea_res)>10){
+        collapsedPathways <- collapsePathways(fgsea_res,
+                                      gene_sets, inp_stats)
+   mainPathways <- fgsea_res[pathway %in% collapsedPathways$mainPathways][
+                         order(-NES), pathway]
+   }else{
+     mainPathways <- fgsea_res[order(-NES), pathway]
+   }
+
+   return( list(full_res = fgsea_res, collapsed =  mainPathways) )
+}
+
+
+library(ggplot2)
+perform_PE <- function(de, gene_set, set_name, de_name){
+         fgsea_res_path <-  file.path(pe_dir, paste(de_name, set_name,"rds", sep = "."))
+         if(file.exists(fgsea_res_path)){
+           message(paste(
+             "!already exists!", fgsea_res_path, sep = "\n"
+           ))
+           return(TRUE)
+         }
+         de  <- de[!is.na(de$stat),]
+         print(paste("start :", de_name ))
+         res <- fgsea_results(cur_table = de, gene_sets = gene_set)
+         saveRDS( object =  res, file = fgsea_res_path)
+         return(TRUE)
+}
+
+pe_dir <- "/scratch1/fs1/martyomov/maksim/permanent/rnaseq/shannon_CHO/fgsea"
+dir.create(pe_dir)
+
+perform_PE(de  = dds_all_res, gene_set = hall_gene_sets,  set_name = "hallmark", de_name = "all_KOvsWT" )
+perform_PE(de  = dds_all_res, gene_set = go_gene_sets,  set_name = "go", de_name = "all_KOvsWT" )
+perform_PE(de  = dds_all_res, gene_set = c2_gene_sets,  set_name = "kegg_c2", de_name = "all_KOvsWT" )
+
+perform_PE(de  = dds_alone_res, gene_set = hall_gene_sets,  set_name = "hallmark", de_name = "alone_KOvsWT" )
+perform_PE(de  = dds_alone_res, gene_set = go_gene_sets,  set_name = "go", de_name = "alone_KOvsWT" )
+perform_PE(de  = dds_alone_res, gene_set = c2_gene_sets,  set_name = "kegg_c2", de_name = "alone_KOvsWT" )
+perform_PE(de  = dds_eated_res, gene_set = hall_gene_sets,  set_name = "hallmark", de_name = "eated_KOvsWT" )
+perform_PE(de  = dds_eated_res, gene_set = go_gene_sets,  set_name = "go", de_name = "eated_KOvsWT" )
+perform_PE(de  = dds_eated_res, gene_set = c2_gene_sets,  set_name = "kegg_c2", de_name = "eated_KOvsWT" )
+
+perform_PE(de  = dds_alone_2h_res, gene_set = hall_gene_sets,  set_name = "hallmark", de_name = "alone_2h_KOvsWT" )
+perform_PE(de  = dds_alone_2h_res, gene_set = go_gene_sets,  set_name = "go", de_name = "alone_2h_KOvsWT" )
+perform_PE(de  = dds_alone_2h_res, gene_set = c2_gene_sets,  set_name = "kegg_c2", de_name = "alone_2h_KOvsWT" )
+perform_PE(de  = dds_eated_2h_res, gene_set = hall_gene_sets,  set_name = "hallmark", de_name = "eated_2h_KOvsWT" )
+perform_PE(de  = dds_eated_2h_res, gene_set = go_gene_sets,  set_name = "go", de_name = "eated_2h_KOvsWT" )
+perform_PE(de  = dds_eated_2h_res, gene_set = c2_gene_sets,  set_name = "kegg_c2", de_name = "eated_2h_KOvsWT" )
+
+perform_PE(de  = dds_alone_4h_res, gene_set = hall_gene_sets,  set_name = "hallmark", de_name = "alone_4h_KOvsWT" )
+perform_PE(de  = dds_alone_4h_res, gene_set = go_gene_sets,  set_name = "go", de_name = "alone_4h_KOvsWT" )
+perform_PE(de  = dds_alone_4h_res, gene_set = c2_gene_sets,  set_name = "kegg_c2", de_name = "alone_4h_KOvsWT" )
+perform_PE(de  = dds_eated_4h_res, gene_set = hall_gene_sets,  set_name = "hallmark", de_name = "eated_4h_KOvsWT" )
+perform_PE(de  = dds_eated_4h_res, gene_set = go_gene_sets,  set_name = "go", de_name = "eated_4h_KOvsWT" )
+perform_PE(de  = dds_eated_4h_res, gene_set = c2_gene_sets,  set_name = "kegg_c2", de_name = "eated_4h_KOvsWT" )
+
+```
+
+
+
+
+
+compare eated vs uneated by KO/WT
+
+
+
+```{r}
+
+KO_samples <- coldata$Genotype == 'KO'
+KO_coldata <- as.data.frame(coldata[KO_samples,])
+rownames(KO_coldata) <- KO_coldata$Samples_Identifier
+KO_counts <- all_counts[, KO_samples]
+dds_KO <- DESeqDataSetFromMatrix(KO_counts, colData = KO_coldata, design=~Engulfment) # TODO HERE
+dds_KO <- estimateSizeFactors(dds_KO)
+dds_KO <- DESeq(dds_KO)
+plotDispEsts(dds_KO)
+
+
+
+
+dds_KO_res <- results(dds_KO, contrast = c("Engulfment","eating", "alone" ), cooksCutoff = FALSE )
+
+dds_KO_res$ncbiRefSeq <- rowdata[rownames(dds_KO_res),]
+dds_KO_res <- as.data.frame(dds_KO_res)
+de_plots$KO_eatedvsalone <- ggplot(dds_KO_res, aes(x=log2FoldChange, y=-log10(padj), color=padj < 0.05)) +
+  geom_point() + theme_bw() + scale_color_manual(values=c("black", "red")) +
+  geom_text_repel(data=dds_alone_res %>% dplyr::filter(padj < 0.05), aes(label=ncbiRefSeq, color=NULL)) + ggtitle ("eated vs alone in KO group")
+
+plot(de_plots$KO_eatedvsalone )
+
+cur_shr <- lfcShrink(dds_KO, coef= "Engulfment_eating_vs_alone", type = "apeglm")
+
+dds_KO_res$log2FoldChange <- cur_shr$log2FoldChange
+dds_KO_res$lfcSE <- cur_shr$lfcSE
+
+de_plots$KO_eatedvsalone_apeglm  <- ggplot(dds_KO_res, aes(x=log2FoldChange, y=-log10(padj), color=padj < 0.05)) +
+  geom_point() + theme_bw() + scale_color_manual(values=c("black", "red")) +
+  geom_text_repel(data=dds_KO_res %>% dplyr::filter(padj < 0.05), aes(label=ncbiRefSeq, color=NULL)) + ggtitle ("eated vs alone in KO group(apeglm)")
+plot(de_plots$KO_eatedvsalone_apeglm )
+
+# =================
+# EATED SAMPLES
+# =================
+WT_samples <- !KO_samples
+WT_coldata <- as.data.frame(coldata[WT_samples,])
+rownames(WT_coldata) <- WT_coldata$Samples_Identifier
+WT_counts <- all_counts[, WT_samples]
+dds_WT <- DESeqDataSetFromMatrix(WT_counts, colData = WT_coldata, design=~Engulfment)
+dds_WT <- estimateSizeFactors(dds_WT)
+dds_WT <- estimateDispersions(dds_WT)
+plotDispEsts(dds_WT)
+
+dds_WT <- DESeq(dds_WT)
+
+
+dds_WT_res <- results(dds_WT, contrast =  c("Engulfment","eating", "alone" ), cooksCutoff = FALSE )
+
+dds_WT_res$ncbiRefSeq <- rowdata[rownames(dds_WT_res),]
+dds_WT_res <- as.data.frame(dds_WT_res)
+de_plots$WT_eatedvsalone <- ggplot(dds_WT_res, aes(x=log2FoldChange, y=-log10(padj), color=padj < 0.05)) +
+  geom_point() + theme_bw() + scale_color_manual(values=c("black", "red")) +
+  geom_text_repel(data=dds_WT_res %>% dplyr::filter(padj < 0.05), aes(label=ncbiRefSeq, color=NULL)) + ggtitle ("eated vs alone in WT group")
+
+plot(de_plots$WT_eatedvsalone)
+cur_shr <- lfcShrink(dds_WT, coef= "Engulfment_eating_vs_alone", type = "apeglm")
+
+dds_WT_res$log2FoldChange <- cur_shr$log2FoldChange
+dds_WT_res$lfcSE <- cur_shr$lfcSE
+
+
+de_plots$WT_eatedvsalone_apeglm <-ggplot(dds_WT_res, aes(x=log2FoldChange, y=-log10(padj), color=padj < 0.05)) +
+  geom_point() + theme_bw() + scale_color_manual(values=c("black", "red")) +
+  geom_text_repel(data=dds_WT_res %>% dplyr::filter(padj < 0.05), aes(label=ncbiRefSeq, color=NULL)) + ggtitle ("eated vs alone in WT group(apeglm)")
+plot(de_plots$WT_eatedvsalone_apeglm)
+
+```
+
+effects of time
+```{r}
+library("ggplot2")
+library(ggpubr)
+dds_time_KO <- DESeqDataSetFromMatrix(KO_counts, colData = KO_coldata, design=~Engulfment + time + Engulfment:time)
+dds_time_KO <- estimateSizeFactors(dds_time_KO)
+dds_time_KO <- estimateDispersions(dds_time_KO)
+dds_time_KO <- DESeq(dds_time_KO)
+dds_time_KO_res <- results(dds_time_KO, name ="Engulfmenteating.time4h", cooksCutoff = FALSE )
+
+genes <- rownames(as.data.frame(dds_time_KO_res) %>% slice_min(padj, n = 15, na_rm = TRUE))
+effect_count = data.table()
+for (engul in levels(dds_time_KO$Engulfment)){
+  cur_dds <- dds_time_KO[,dds_time_KO$Engulfment == engul]
+ 
+  for(gene in genes){
+      d <- plotCounts(cur_dds, gene=gene, intgroup="time",
+                returnData=TRUE)
+      d$gene = gene
+      d$Engulfment = engul
+      effect_count <- rbind(effect_count,d)
+  }
+
+}
+pal =  get_palette( k = length(genes))
+
+de_plots$KO_time_effect <- ggplot(effect_count, aes(x=time, y=count, colour = gene)) + 
+  geom_point(position=position_jitter(w=0.1,h=0)) + geom_line(stat = "summary", fun = median, aes(group = gene)) +
+  scale_y_log10(breaks=c(25,100,400)) + facet_wrap(~Engulfment) + ggtitle("Time effect in KO samples")
+dds_time_KO$sample_Engulfment_time <- paste(dds_time_KO$Samples_Identifier,dds_time_KO$Engulfment, dds_time_KO$time, sep = "_")
+de_plots$KO_time_effect_bar <- barplot(assay(dds_time_KO)[genes,],col = pal, names.arg =dds_time_KO$sample_Engulfment_time ,las=2, main="counts of effect genes in KO sampels" )
+
+plot(de_plots$KO_time_effect)
+plot(de_plots$KO_time_effect_bar)
+# ===========
+# WT samples
+# ============
+
+dds_time_WT <- DESeqDataSetFromMatrix(WT_counts, colData = WT_coldata, design=~Engulfment + time + Engulfment:time)
+dds_time_WT <- estimateSizeFactors(dds_time_WT)
+dds_time_WT <- estimateDispersions(dds_time_WT)
+dds_time_WT <- DESeq(dds_time_WT)
+dds_time_WT_res <- results(dds_time_WT, name ="Engulfmenteating.time4h", cooksCutoff = FALSE )
+
+genes <- rownames(as.data.frame(dds_time_WT_res) %>% slice_min(padj, n = 15, na_rm = TRUE))
+effect_count = data.table()
+for (engul in levels(dds_time_WT$Engulfment)){
+  cur_dds <- dds_time_WT[,dds_time_WT$Engulfment == engul]
+ 
+  for(gene in genes){
+      d <- plotCounts(cur_dds, gene=gene, intgroup="time",
+                returnData=TRUE)
+      d$gene = gene
+      d$Engulfment = engul
+      effect_count <- rbind(effect_count,d)
+  }
+
+}
+pal =  get_palette( k = length(genes))
+de_plots$WT_time_effect <- ggplot(effect_count, aes(x=time, y=count, colour = gene)) + scale_color_manual(values= pal)+ 
+  geom_point(position=position_jitter(w=0.1,h=0)) + geom_line(stat = "summary", fun = median, aes(group = gene)) +
+  scale_y_log10(breaks=c(25,100,400)) + facet_wrap(~Engulfment) + ggtitle("Time effect in WT samples")
+
+dds_time_WT$sample_Engulfment_time <- paste(dds_time_WT$Samples_Identifier,dds_time_WT$Engulfment, dds_time_WT$time, sep = "_")
+de_plots$WT_time_effect_bar <- barplot(assay(dds_time_WT)[genes,],col = pal, names.arg =dds_time_WT$sample_Engulfment_time ,las=2, main="counts of effect genes in WT samples" )
+plot(de_plots$WT_time_effect)
+plot(de_plots$WT_time_effect_bar)
+
+```
+
+
+
+
+
+
+
+
+
+```{r}
+
+ perform_PE(de  = dds_KO_res, gene_set = hall_gene_sets,  set_name = "hallmark", de_name = "KO_EatedvsAlone" )
+
+
+ perform_PE(de  = dds_KO_res, gene_set = go_gene_sets,  set_name = "go", de_name = "KO_EatedvsAlone" )
+  perform_PE(de  = dds_KO_res, gene_set = c2_gene_sets,  set_name = "kegg_c2", de_name = "KO_EatedvsAlone" )
+
+
+
+ perform_PE(de  = dds_WT_res, gene_set = hall_gene_sets,  set_name = "hallmark", de_name = "WT_EatedvsAlone" )
+ perform_PE(de  = dds_WT_res, gene_set = go_gene_sets,  set_name = "go", de_name = "WT_EatedvsAlone" )
+ perform_PE(de  = dds_WT_res, gene_set = c2_gene_sets,  set_name = "kegg_c2", de_name = "WT_EatedvsAlone" )
+```
+
+
+```{r}
+a <- readRDS("/scratch1/fs1/martyomov/maksim/permanent/rnaseq/shannon_CHO/fgsea/eated_KOvsWT.go.rds")
+```
+
+
+```{r}
+fgsea_files <- list.files(pe_dir, pattern = ".rds")
+fgsea_all <- data.table()
+main_pathways <- c()
+
+
+for(fgsea_file in fgsea_files){
+   fgsea_res <- readRDS(file = file.path(pe_dir,fgsea_file))
+   main_pathways <- unique(c(main_pathways, fgsea_res$collapsed))
+   fgsea_res <- fgsea_res$full_res
+   comparison <- sub(x = fgsea_file, pattern = "(.+)\\.(.+)\\.rds", replacement = "\\1")
+   gene_sets <- sub(x = fgsea_file, pattern = "(.+)\\.(.+)\\.rds", replacement = "\\2")
+   fgsea_res$comparison <- comparison
+   fgsea_res$set_name <- gene_sets
+   fgsea_all <- rbind(fgsea_all, fgsea_res)
+}
+
+fgsea_all$pathway <- as.factor(fgsea_all$pathway)
+
+```
+
+
+
+```{r}
+library(ggplot2)
+library(ggrepel)
+one_volcano <- function(fgsea_res,  comparison, set_name ) {
+   ggplot(fgsea_res, aes(x=NES, y=-log10(padj), color=padj < 0.05)) +
+  geom_point() + theme_bw() + scale_color_manual(values=c("black", "red")) +
+  geom_text_repel(data=fgsea_res %>% dplyr::filter(padj < 0.05), aes(label=pathway, color=NULL)) + ggtitle(paste (comparison,set_name, sep = "."))
+}
+
+
+volcano_plots <- list()
+
+comparisons <- unique(fgsea_all$comparison)
+set_names <- unique(fgsea_all$set_name)
+library(ggplot2)
+library(ggrepel)
+
+   for (cond in comparisons){
+      for (sname in set_names){
+         cur_res <- fgsea_all[comparison == cond & pathway %in% main_pathways & set_name == sname ,  ]
+         clust_name <- cur_res$cluster_name[1]
+         cur_plot <- one_volcano(cur_res, cond, sname)
+         volcano_plots[[cond]][[paste(sname, sep = ".")]] <-  cur_plot
+      }
+
+     
+  
+}
+```
+
+```{r}
+volcano_plots
+```
+
+
+
+```{r}
+library(stringr)
+get_one_dot_plot <- function(fgsea_res,  gene_set){
+   data <- fgsea_res[gene_set == gene_set, .(pathway,comparison, NES, padj)]
+   print(paste("unique pathways: ",length(unique(data$pathway))))
+   # plot: dot plot
+   if (gene_set == "halmark"){
+     data$pathway_name <- str_sub(data$pathway,1, 30)
+   } else {
+      data$pathway_name <- data$pathway
+   }
+   ggplot(data = data, aes(x = comparison, y = pathway_name, 
+                        color = NES , size = -log10(padj))) + 
+   geom_point() +
+   scale_color_gradient(low = "blue", high = "red") +
+   theme_bw() + 
+   ylab("") + 
+   xlab("") + 
+   ggtitle( paste( gene_set, "pathways")) +  theme(axis.text.x = element_text(angle = 45, vjust = 0.5))
+   }
+
+dot_plots <- list()
+
+for (geneset in unique(fgsea_all$set_name)){
+       fgsea_all %>% filter(pathway %in% main_pathways &  padj < 0.05 & set_name == geneset) %>% 
+       arrange(padj) -> cur_fgsea
+      cur_plot <- get_one_dot_plot(fgsea_res = cur_fgsea,gene_set = geneset)
+      dot_plots[[geneset]] <- cur_plot
+
+
+}
+```
+
+```{r}
+dot_plots
+```
+```{r}
+library(rasterpdf)  
+plot_dir <- "/scratch1/fs1/martyomov/maksim/permanent/rnaseq/shannon_CHO/plots"
+dir.create(plot_dir)
+raster_pdf(file.path(plot_dir,paste0( "pathways_report_0.05.pdf")), width = 15, height = 75, res = 300)
+
+dot_plots$go
+dot_plots$kegg_c2
+dev.off()
+```
+
+
+```{r}
+
+
+raster_pdf(file.path(plot_dir, "all_report.pdf"), width = 13, height = 8, res = 300)
+
+for(plt in pca_plots){
+  plot(plt)
+}
+for (plt in other_plots){
+  plot(plt)
+}
+for(plt in de_plots){
+  plot(plt)
+}
+
+plot(dot_plots[["hallmark"]])   
+      
+  
+dev.off()
+```
+

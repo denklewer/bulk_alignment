@@ -1,0 +1,13 @@
+name: himer_align
+channels:
+        - bioconda
+        - conda-forge
+dependencies:
+        - java-jdk
+        - star
+        - samtools
+        - subread
+        - gxf2bed
+        - rseqc
+        - multiqc
+        - fastqc

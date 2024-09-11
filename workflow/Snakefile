@@ -1,0 +1,58 @@
+configfile : "config/config.yaml"
+
+def get_all_samples_counts(wildcards):
+	existing_samples = glob_wildcards(os.path.join(config["paths"]["data_folder"], "{sample,[^_]+}_R1_001.fastq.gz")).sample
+	#res = expand(config["paths"]["out_dir"] + "/{samp}_"+"_".join(config["orgs"]) +"/cho_counts/counts.txt", samp = existing_samples)
+	needed_samples = [x for x in existing_samples if int(x)>20 and int(x)<=60]
+	res = expand(config["paths"]["out_dir"] + "/{samp}_"+"_".join(config["orgs"]) +"/mouse_counts/counts.txt", samp = needed_samples)
+	return res 
+rule all:
+	input:
+		counts = get_all_samples_counts,
+		multiqc = config["paths"]["out_dir"] + "/qc_logs/multiqc_report.html"
+
+
+def get_files_for_multiqc(wildcards):
+	existing_samples = glob_wildcards(os.path.join(config["paths"]["data_folder"], "{sample,[^_]+}_R1_001.fastq.gz")).sample
+	needed_samples = [x for x in existing_samples if int(x)>20 and int(x)<=60]
+	#gw = glob_wildcards(os.path.join(config["paths"]["data_folder"], "{sample}_R1_001.fastq.gz"))
+	#infer_files = expand("{out_path}/qc_logs/rseqc/{sample}_" + "_".join(config["orgs"]) + "/mouse_infer_experiment.txt",
+	#	out_path = wildcards.out_path,
+	#	sample = gw.sample
+	#	)
+	infer_files = expand("{out_path}/qc_logs/rseqc/{sample}_" + "_".join(config["orgs"]) + "/mouse_infer_experiment.txt",                                                           
+	       out_path = wildcards.out_path,
+	       sample = needed_samples
+               )
+	fastqc_files = expand("{out_path}/qc_logs/fastqc/{sample}_R{n}_001_fastqc.html",
+		out_path = wildcards.out_path,
+		sample=needed_samples,
+		n=[1,2])
+	#"{out_path}/qc_logs/rseqc/{sample}_{first_org}_{second_org}.geneBodyCoverage.txt"
+	cov_genes = expand("{out_path}/qc_logs/rseqc/{sample}_"+ "_".join(config["orgs"]) +"/mouse.geneBodyCoverage.txt",
+           out_path = wildcards.out_path,
+           sample=needed_samples)
+	return infer_files + fastqc_files + cov_genes
+rule run_multiqc:
+	input:
+		get_files_for_multiqc#,
+		#gene_conv = rules.geneBody_coverage.output.gene_covr
+	output:
+		report = "{out_path}/qc_logs/multiqc_report.html"
+	threads: workflow.cores*0.3
+	conda: "envs/himer_align.yaml"
+	shell:
+		"multiqc {wildcards.out_path}/qc_logs -o {wildcards.out_path}/qc_logs"
+
+
+include: 'rules/fasq_process.smk'
+include: 'rules/align.smk'
+include: 'rules/count_features.smk'
+include: 'rules/QC_files.smk'
+
+
+
+
+
+
+

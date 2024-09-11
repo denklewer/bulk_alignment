@@ -1,0 +1,5 @@
+/.snakemake/
+/Log.out
+/log.txt
+/np_summary.txt
+.idea/
