@@ -20,7 +20,7 @@ def get_files_for_multiqc(wildcards):
 	#	out_path = wildcards.out_path,
 	#	sample = gw.sample
 	#	)
-	infer_files = expand("{out_path}/qc_logs/rseqc/{sample}_" + config["orgs"] + "/infer_experiment.txt",
+	infer_files = expand("{out_path}/qc_logs/rseqc/{sample}_" + config["org"] + "/infer_experiment.txt",
 	       out_path = wildcards.out_path,
 	       sample = existing_samples
                )
