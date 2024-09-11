@@ -38,8 +38,8 @@ rule get_star_index:
 
 rule run_star:
     input:
-        first_org_read_1 = config["paths"]["data_folder"] + "/{sample}_R1_001.fastq.gz",
-        first_org_read_2 =  config["paths"]["data_folder"] + "/{sample}_R2_001.fastq.gz",
+        first_org_read_1 = config["paths"]["data_folder"] + "/sample{sample}_R1_001.fastq.gz",
+        first_org_read_2 =  config["paths"]["data_folder"] + "/sample{sample}_R2_001.fastq.gz",
         sjdb =  config["paths"]["star_preprocessed_files"][config["org"]]["sjdbList"]
     output:
         sorted_bam = "{out_path}/{sample}_" + config["org"]  + "/star_aligned/Aligned.sortedByCoord.out.bam",
