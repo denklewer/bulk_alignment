@@ -3,7 +3,7 @@ configfile : "config/config.yaml"
 def get_all_samples_counts(wildcards):
 	existing_samples = glob_wildcards(os.path.join(config["paths"]["data_folder"], "sample{id,[^_]+}_R1_001.fastq.gz")).id
 	res = expand(
-		config["paths"]["out_dir"] + "/{current_sample}_"+"_".join(config["orgs"]) +"/counts/counts.txt",
+		config["paths"]["out_dir"] + "/{current_sample}_"+ config["org"] +"/counts/counts.txt",
 		current_sample = existing_samples
 	) 	# featureCounts rule
 	return res 
@@ -14,25 +14,23 @@ rule all:
 
 
 def get_files_for_multiqc(wildcards):
-	existing_samples = glob_wildcards(os.path.join(config["paths"]["data_folder"], "{sample,[^_]+}_R1_001.fastq.gz")).sample
-	needed_samples = [x for x in existing_samples if int(x)>20 and int(x)<=60]
+	existing_samples = glob_wildcards(os.path.join(config["paths"]["data_folder"], "sample{id,[^_]+}_R1_001.fastq.gz")).id
 	#gw = glob_wildcards(os.path.join(config["paths"]["data_folder"], "{sample}_R1_001.fastq.gz"))
 	#infer_files = expand("{out_path}/qc_logs/rseqc/{sample}_" + "_".join(config["orgs"]) + "/mouse_infer_experiment.txt",
 	#	out_path = wildcards.out_path,
 	#	sample = gw.sample
 	#	)
-	infer_files = expand("{out_path}/qc_logs/rseqc/{sample}_" + "_".join(config["orgs"]) + "/mouse_infer_experiment.txt",                                                           
+	infer_files = expand("{out_path}/qc_logs/rseqc/{sample}_" + config["orgs"] + "/infer_experiment.txt",
 	       out_path = wildcards.out_path,
-	       sample = needed_samples
+	       sample = existing_samples
                )
 	fastqc_files = expand("{out_path}/qc_logs/fastqc/{sample}_R{n}_001_fastqc.html",
 		out_path = wildcards.out_path,
-		sample=needed_samples,
+		sample=existing_samples,
 		n=[1,2])
-	#"{out_path}/qc_logs/rseqc/{sample}_{first_org}_{second_org}.geneBodyCoverage.txt"
-	cov_genes = expand("{out_path}/qc_logs/rseqc/{sample}_"+ "_".join(config["orgs"]) +"/mouse.geneBodyCoverage.txt",
+	cov_genes = expand("{out_path}/qc_logs/rseqc/{sample}_"+ config["org"] +"/geneBodyCoverage.txt",
            out_path = wildcards.out_path,
-           sample=needed_samples)
+           sample=existing_samples)
 	return infer_files + fastqc_files + cov_genes
 rule run_multiqc:
 	input:

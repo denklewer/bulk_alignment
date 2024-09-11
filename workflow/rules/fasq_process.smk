@@ -3,16 +3,16 @@ configfile : "config/config.yaml"
 rule align_both_bb:
         input:
                 first_ref = "{out_path}/{first_org}_ref_prepared/{first_org}_genome.fa",
-		second_ref = "{out_path}/{second_org}_ref_prepared/{second_org}_genome.fa",
+                second_ref = "{out_path}/{second_org}_ref_prepared/{second_org}_genome.fa",
                 sample_read_1 = config["paths"]["data_folder"] + "/{sample}_R1_001.fastq.gz",
                 sample_read_2 = config["paths"]["data_folder"] + "/{sample}_R2_001.fastq.gz"
         output:
                 first_read_1 = "{out_path}/{sample}_{first_org}_{second_org}/{sample}_{first_org}_R1.fq",
-		first_read_2 = "{out_path}/{sample}_{first_org}_{second_org}/{sample}_{first_org}_R2.fq",
+                first_read_2 = "{out_path}/{sample}_{first_org}_{second_org}/{sample}_{first_org}_R2.fq",
                 second_read_1 =  "{out_path}/{sample}_{first_org}_{second_org}/{sample}_{second_org}_R1.fq",
-		second_read_2 =  "{out_path}/{sample}_{first_org}_{second_org}/{sample}_{second_org}_R2.fq"
+                second_read_2 =  "{out_path}/{sample}_{first_org}_{second_org}/{sample}_{second_org}_R2.fq"
         conda: "../envs/himer_align.yaml"
-	threads: 4
+        threads: 4
         params:
                 bbsplit = config["paths"]["bb_tools"] + "/bbsplit.sh -Xmx100g",
                 basename = "{out_path}/{sample}_{first_org}_{second_org}/{sample}_%_R#.fq",

@@ -1,5 +1,5 @@
 configfile : "config/config.yaml"
-
+import os.path
 rule use_fastqc:
 	input:
 		fasta_file = config["paths"]["data_folder"] + "/{fasta}.fastq.gz"
@@ -12,18 +12,18 @@ rule use_fastqc:
 
 rule generate_bed_file:
 	input:
-		gtf_file = rules.dumb_merge_genomes.output.chimeric_gtf
+		gtf_file = config["genome_files"][config["org"]]["gtf"]
 	output:
-		bed_file = "{out_path}/concatenate_ref/{first_org}_{second_org}_generated.bed"
+		bed_file = "{out_path}/generated.bed"
 	conda: "../envs/himer_align.yaml"
 	shell: "gxf2bed -i {input.gtf_file} -o {output.bed_file}"
 
 rule rseqc_infer_experiment:
 	input:
-		bam_file = "{out_path}/{sample}_{first_org}_{second_org}/{org}_star_aligned/Aligned.sortedByCoord.out.bam",
+		bam_file = "{out_path}/{sample}_" + config["org"]  + "/star_aligned/Aligned.sortedByCoord.out.bam",
 		bed_file = rules.generate_bed_file.output.bed_file
 	output:
-		infered = "{out_path}/qc_logs/rseqc/{sample}_{first_org}_{second_org}/{org}_infer_experiment.txt"
+		infered = "{out_path}/qc_logs/rseqc/{sample}_"+  config["org"] +"/infer_experiment.txt"
 	threads: workflow.cores*0.3
 	conda: "../envs/himer_align.yaml"
 	shell:
@@ -32,12 +32,14 @@ rule rseqc_infer_experiment:
 
 rule geneBody_coverage:
 	input:
-		bam_file = "{out_path}/{sample}_{first_org}_{second_org}/{org}_star_aligned/Aligned.sortedByCoord.out.bam",
+		bam_file = "{out_path}/{sample}_" + config["org"]  + "/star_aligned/Aligned.sortedByCoord.out.bam",
 		bed_file = rules.generate_bed_file.output.bed_file
 	output:
-		gene_covr = "{out_path}/qc_logs/rseqc/{sample}_{first_org}_{second_org}/{org}.geneBodyCoverage.txt"
+		gene_covr = "{out_path}/qc_logs/rseqc/{sample}_"+  config["org"] +"/geneBodyCoverage.txt"
+	params:
+		coverage_dir = lambda wildcards, output: os.path.split(output.gene_covr)[0]
 	conda: "../envs/himer_align.yaml"
 	threads: workflow.cores*0.3
 	shell:
-		"geneBody_coverage.py -r {input.bed_file} -i {input.bam_file}  -o {wildcards.out_path}/qc_logs/rseqc/{wildcards.sample}_{wildcards.first_org}_{wildcards.second_org}/{wildcards.org}"
+		"geneBody_coverage.py -r {input.bed_file} -i {input.bam_file}  -o {params.coverage_dir}"
 
