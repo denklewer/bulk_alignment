@@ -49,19 +49,24 @@ rule rename_chromosomes_fasta:
 
 
 
+
 rule dumb_merge_genomes:
         input:
-                first_ref = "{out_path}/{first_org}_ref_prepared/{first_org}_genome.fa",
-		second_ref = "{out_path}/{second_org}_ref_prepared/{second_org}_genome.fa",
-                first_gtf = "{out_path}/{first_org}_ref_prepared/{first_org}_genes.gtf",
-		second_gtf = "{out_path}/{second_org}_ref_prepared/{second_org}_genes.gtf"
+            ref_files = expand(
+                "{out_path} / {current_organism}_ref_prepared / {current_organism}_genome.fa",
+                current_organism=config["orgs"]
+            ),
+            gtf_files = expand(
+                "{out_path}/{current_organism}_ref_prepared/{current_organism}_genes.gtf",
+                current_organism=config["orgs"]
+            )
         output:
-                chimeric_fa = "{out_path}/concatenate_ref/{first_org}_{second_org}.fa",
-                chimeric_gtf = "{out_path}/concatenate_ref/{first_org}_{second_org}.gtf"
+                chimeric_fa = "{out_path}/concatenate_ref/" + "_".join(config["orgs"]) +".fa",
+                chimeric_gtf = "{out_path}/concatenate_ref/" + "_".join(config["orgs"]) + ".gtf"
         shell: """
-                cat {input.first_ref} {input.second_ref} > {output.chimeric_fa}
-                cat {input.first_gtf} {input.second_gtf} > {output.chimeric_gtf}
-                """
+                cat %s > {output.chimeric_fa}
+                cat %s > {output.chimeric_gtf}
+                """.format(" ".join(input.ref_files),  " ".join(input.gtf_files))
 
 #not working
 #rule splt_org_paired_fq:

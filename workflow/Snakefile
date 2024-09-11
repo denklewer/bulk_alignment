@@ -1,10 +1,11 @@
 configfile : "config/config.yaml"
 
 def get_all_samples_counts(wildcards):
-	existing_samples = glob_wildcards(os.path.join(config["paths"]["data_folder"], "{sample,[^_]+}_R1_001.fastq.gz")).sample
-	#res = expand(config["paths"]["out_dir"] + "/{samp}_"+"_".join(config["orgs"]) +"/cho_counts/counts.txt", samp = existing_samples)
-	needed_samples = [x for x in existing_samples if int(x)>20 and int(x)<=60]
-	res = expand(config["paths"]["out_dir"] + "/{samp}_"+"_".join(config["orgs"]) +"/mouse_counts/counts.txt", samp = needed_samples)
+	existing_samples = glob_wildcards(os.path.join(config["paths"]["data_folder"], "sample{id,[^_]+}_R1_001.fastq.gz")).id
+	res = expand(
+		config["paths"]["out_dir"] + "/{current_sample}_"+"_".join(config["orgs"]) +"/counts/counts.txt",
+		current_sample = existing_samples
+	) 	# featureCounts rule
 	return res 
 rule all:
 	input:
