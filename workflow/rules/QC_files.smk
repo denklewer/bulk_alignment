@@ -49,7 +49,7 @@ rule geneBody_coverage:
 		gene_covr = "{out_path}/qc_logs/rseqc/sample{sample}_"+  config["org"] +"/" + "sample{sample}_"+  config["org"] + ".geneBodyCoverage.txt"
 	params:
 		coverage_dir = lambda wildcards, output: os.path.split(output.gene_covr)[0],
-		file_prefix = lambda wildcards: wildcards.sample + "_" +  config["org"]
+		file_prefix = lambda wildcards: "sample" + wildcards.sample + "_" +  config["org"]
 
 	conda: "../envs/himer_align.yaml"
 	threads: workflow.cores*0.3
