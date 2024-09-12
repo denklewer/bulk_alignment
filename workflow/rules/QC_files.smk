@@ -46,11 +46,13 @@ rule geneBody_coverage:
 		bai_file= "{out_path}/sample{sample}_" + config["org"]  + "/star_aligned/Aligned.sortedByCoord.out.bam.bai",
 		bed_file = rules.generate_bed_file.output.bed_file
 	output:
-		gene_covr = "{out_path}/qc_logs/rseqc/sample{sample}_"+  config["org"] +"/geneBodyCoverage.txt"
+		gene_covr = "{out_path}/qc_logs/rseqc/sample{sample}_"+  config["org"] +"/" + "sample{sample}_"+  config["org"] + ".geneBodyCoverage.txt"
 	params:
-		coverage_dir = lambda wildcards, output: os.path.split(output.gene_covr)[0]
+		coverage_dir = lambda wildcards, output: os.path.split(output.gene_covr)[0],
+		file_prefix = lambda wildcards: wildcards.sample + "_" +  config["org"]
+
 	conda: "../envs/himer_align.yaml"
 	threads: workflow.cores*0.3
 	shell:
-		"geneBody_coverage.py -r {input.bed_file} -i {input.bam_file}  -o {params.coverage_dir}"
+		"geneBody_coverage.py -r {input.bed_file} -i {input.bam_file}  -o {params.coverage_dir}/{params.file_prefix}"
 
