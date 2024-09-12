@@ -28,9 +28,10 @@ def get_files_for_multiqc(wildcards):
 		out_path = wildcards.out_path,
 		sample=existing_samples,
 		n=[1,2])
-	cov_genes = expand("{out_path}/qc_logs/rseqc/sample{sample}_"+ config["org"] +"/geneBodyCoverage.txt",
-           out_path = wildcards.out_path,
-           sample=existing_samples)
+	cov_genes = expand("{out_path}/qc_logs/rseqc/sample{sample}_{org_string}/sample{sample}_{org_string}.geneBodyCoverage.txt",
+		out_path = wildcards.out_path,
+		sample=existing_samples,
+		org_string=config["org"])
 	return infer_files + fastqc_files + cov_genes
 rule run_multiqc:
 	input:
