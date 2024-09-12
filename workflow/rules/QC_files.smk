@@ -29,10 +29,21 @@ rule rseqc_infer_experiment:
 	shell:
 		"infer_experiment.py -r {input.bed_file} -i {input.bam_file} >{output.infered}"
 
+rule index_bam:
+	input:
+		bam_file = "{out_path}/sample{sample}_" + config["org"]  + "/star_aligned/Aligned.sortedByCoord.out.bam"
+	output:
+		bai_file = "{out_path}/sample{sample}_" + config["org"]  + "/star_aligned/Aligned.sortedByCoord.out.bam.bai"
+	conda: "../envs/himer_align.yaml"
+	threads: workflow.cores*0.3
+	shell:
+		"samtools index {input.bam_file}"
+
 
 rule geneBody_coverage:
 	input:
 		bam_file = "{out_path}/sample{sample}_" + config["org"]  + "/star_aligned/Aligned.sortedByCoord.out.bam",
+		bai_file= "{out_path}/sample{sample}_" + config["org"]  + "/star_aligned/Aligned.sortedByCoord.out.bam.bai",
 		bed_file = rules.generate_bed_file.output.bed_file
 	output:
 		gene_covr = "{out_path}/qc_logs/rseqc/sample{sample}_"+  config["org"] +"/geneBodyCoverage.txt"
