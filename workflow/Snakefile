@@ -42,7 +42,7 @@ rule run_multiqc:
 	threads: workflow.cores*0.3
 	conda: "envs/himer_align.yaml"
 	shell:
-		"multiqc {wildcards.out_path}/qc_logs -o {wildcards.out_path}/qc_logs"
+		"multiqc {wildcards.out_path}/qc_logs --force -o {wildcards.out_path}/qc_logs"
 
 
 include: 'rules/align.smk'
