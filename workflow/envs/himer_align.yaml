@@ -1,7 +1,7 @@
 name: himer_align
 channels:
-        - bioconda
         - conda-forge
+        - bioconda
 dependencies:
         - java-jdk
         - star
