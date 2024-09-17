@@ -3,3 +3,7 @@
 /log.txt
 /np_summary.txt
 .idea/
+.Rproj.user
+/workflow/scripts/out/
+*.Rproj
+*.nb.html
