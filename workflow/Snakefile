@@ -1,7 +1,7 @@
 configfile : "config/config.yaml"
 
 def get_all_samples_counts(wildcards):
-	existing_samples = glob_wildcards(os.path.join(config["paths"]["data_folder"], "sample{id,[^_]+}_R1_001.fastq.gz")).id
+	existing_samples = glob_wildcards(os.path.join(config["paths"]["data_folder"], "{sample_name, [^_]+}_{id,[^_]+}_1.fq.gz")).id
 	res = expand(
 		config["paths"]["out_dir"] + "/sample{current_sample}_"+ config["org"] +"/counts/counts.txt",
 		current_sample = existing_samples
@@ -14,7 +14,7 @@ rule all:
 
 
 def get_files_for_multiqc(wildcards):
-	existing_samples = glob_wildcards(os.path.join(config["paths"]["data_folder"], "sample{id,[^_]+}_R1_001.fastq.gz")).id
+	existing_samples = glob_wildcards(os.path.join(config["paths"]["data_folder"], "{id,[^_]+}_1.fq.gz")).id
 	#gw = glob_wildcards(os.path.join(config["paths"]["data_folder"], "{sample}_R1_001.fastq.gz"))
 	#infer_files = expand("{out_path}/qc_logs/rseqc/{sample}_" + "_".join(config["orgs"]) + "/mouse_infer_experiment.txt",
 	#	out_path = wildcards.out_path,
@@ -24,7 +24,7 @@ def get_files_for_multiqc(wildcards):
 	       out_path = wildcards.out_path,
 	       sample = existing_samples
                )
-	fastqc_files = expand("{out_path}/qc_logs/fastqc/sample{sample}_R{n}_001_fastqc.html",
+	fastqc_files = expand("{out_path}/qc_logs/fastqc/sample{sample}_{n}_fastqc.html",
 		out_path = wildcards.out_path,
 		sample=existing_samples,
 		n=[1,2])

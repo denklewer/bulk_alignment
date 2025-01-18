@@ -2,7 +2,7 @@ configfile : "config/config.yaml"
 import os.path
 rule use_fastqc:
 	input:
-		fasta_file = config["paths"]["data_folder"] + "/{fasta}.fastq.gz"
+		fasta_file = config["paths"]["data_folder"] + "/{fasta}.fq.gz"
 	output:
 		fastqc_report = "{out_path}/qc_logs/fastqc/{fasta}_fastqc.html"
 	threads: workflow.cores*0.3

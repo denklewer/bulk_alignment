@@ -2,9 +2,9 @@ org: "mouse" #"human"
 mate_length: 150 
 paths:
         bb_tools: "/storage1/fs1/martyomov/Active/IndividualBackUps/maksim/tools/bbtools/bbmap"
-        data_folder: "/storage1/fs1/martyomov/Active/collaborations/denisk/Tomas_Paulenda/macrophages_treated/HGC20240509004-0058_raw" # path to your fastq files
-        result_folder: "/storage1/fs1/martyomov/Active/collaborations/denisk/Tomas_Paulenda/macrophages_treated/HGC20240509004-0058_alignment_result"
-        out_dir: "/storage1/fs1/martyomov/Active/collaborations/denisk/Tomas_Paulenda/macrophages_treated"
+        data_folder: "/storage1/fs1/martyomov/Active/collaborations/denisk/250117_Merlin_Johana/raw_data" # path to your fastq files
+        result_folder: "/storage1/fs1/martyomov/Active/collaborations/denisk/250117_Merlin_Johana/alignment_result"
+        out_dir: "/storage1/fs1/martyomov/Active/collaborations/denisk/250117_Merlin_Johana"
         genome_files:
                 human:
                         ref: "/scratch1/fs1/martyomov/maksim/permanent/scn-pipeline_storage_2/resources/cellranger/hs/fasta/genome.fa"
