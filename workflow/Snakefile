@@ -3,7 +3,7 @@ configfile : "config/config.yaml"
 def get_all_samples_counts(wildcards):
 	existing_samples = glob_wildcards(os.path.join(config["paths"]["data_folder"], "{sample_name, [^_]+}_{id,[^_]+}_1.fq.gz")).id
 	res = expand(
-		config["paths"]["out_dir"] + "/sample{current_sample}_"+ config["org"] +"/counts/counts.txt",
+		config["paths"]["out_dir"] + "/{current_sample}_"+ config["org"] +"/counts/counts.txt",
 		current_sample = existing_samples
 	) 	# featureCounts rule
 	return res 
@@ -20,15 +20,15 @@ def get_files_for_multiqc(wildcards):
 	#	out_path = wildcards.out_path,
 	#	sample = gw.sample
 	#	)
-	infer_files = expand("{out_path}/qc_logs/rseqc/sample{sample}_" + config["org"] + "/infer_experiment.txt",
+	infer_files = expand("{out_path}/qc_logs/rseqc/{sample}_" + config["org"] + "/infer_experiment.txt",
 	       out_path = wildcards.out_path,
 	       sample = existing_samples
                )
-	fastqc_files = expand("{out_path}/qc_logs/fastqc/sample{sample}_{n}_fastqc.html",
+	fastqc_files = expand("{out_path}/qc_logs/fastqc/{sample}_{n}_fastqc.html",
 		out_path = wildcards.out_path,
 		sample=existing_samples,
 		n=[1,2])
-	cov_genes = expand("{out_path}/qc_logs/rseqc/sample{sample}_{org_string}/sample{sample}_{org_string}.geneBodyCoverage.txt",
+	cov_genes = expand("{out_path}/qc_logs/rseqc/sample{sample}_{org_string}/{sample}_{org_string}.geneBodyCoverage.txt",
 		out_path = wildcards.out_path,
 		sample=existing_samples,
 		org_string=config["org"])
