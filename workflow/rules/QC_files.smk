@@ -6,7 +6,7 @@ rule use_fastqc:
 	output:
 		fastqc_report = "{out_path}/qc_logs/fastqc/{fasta}_fastqc.html"
 	threads: workflow.cores*0.3
-	conda: "../envs/himer_align.yaml"
+	conda: "star_env"
 	shell:
 		"fastqc -o  {wildcards.out_path}/qc_logs/fastqc -t {threads} {input.fasta_file}"
 
@@ -15,7 +15,7 @@ rule generate_bed_file:
 		gtf_file = config["paths"]["genome_files"][config["org"]]["gtf"]
 	output:
 		bed_file = "{out_path}/generated.bed"
-	conda: "../envs/himer_align.yaml"
+	conda: "star_env"
 	shell: "gxf2bed -i {input.gtf_file} -o {output.bed_file}"
 
 rule rseqc_infer_experiment:
@@ -25,7 +25,7 @@ rule rseqc_infer_experiment:
 	output:
 		infered = "{out_path}/qc_logs/rseqc/{sample}_"+  config["org"] +"/infer_experiment.txt"
 	threads: workflow.cores*0.3
-	conda: "../envs/himer_align.yaml"
+	conda: "star_env"
 	shell:
 		"infer_experiment.py -r {input.bed_file} -i {input.bam_file} >{output.infered}"
 
@@ -34,7 +34,7 @@ rule index_bam:
 		bam_file = "{out_path}/{sample}_" + config["org"]  + "/star_aligned/Aligned.sortedByCoord.out.bam"
 	output:
 		bai_file = "{out_path}/{sample}_" + config["org"]  + "/star_aligned/Aligned.sortedByCoord.out.bam.bai"
-	conda: "../envs/himer_align.yaml"
+	conda: "star_env"
 	threads: workflow.cores*0.3
 	shell:
 		"samtools index {input.bam_file}"
@@ -51,7 +51,7 @@ rule geneBody_coverage:
 		coverage_dir = lambda wildcards, output: os.path.split(output.gene_covr)[0],
 		file_prefix = lambda wildcards: "sample" + wildcards.sample + "_" +  config["org"]
 
-	conda: "../envs/himer_align.yaml"
+	conda: "star_env"
 	threads: workflow.cores*0.3
 	shell:
 		"geneBody_coverage.py -r {input.bed_file} -i {input.bam_file}  -o {params.coverage_dir}/{params.file_prefix}"

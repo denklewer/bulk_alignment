@@ -8,7 +8,7 @@ rule featureCounts:
         counts = "{out_path}/{sample}_"+ config["org"] + "/counts/counts.txt",
         summary = "{out_path}/{sample}_" + config["org"] + "/counts/counts.txt.summary"
     threads: workflow.cores
-    conda: "../envs/himer_align.yaml"
+    conda: "star_env"
     shell:
  #       "featureCounts -p --extraAttributes gene_name -t gene -g gene_id  -T {threads}  -a {input.gtf_file} -o {output.counts} {input.sorted_bam} --byReadGroup"
         "featureCounts -p --extraAttributes gene_name  -g gene_id  -T {threads}  -a {input.gtf_file} -o {output.counts} {input.sorted_bam}"

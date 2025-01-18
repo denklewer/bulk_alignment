@@ -11,7 +11,7 @@ rule run_star:
     output:
         sorted_bam = "{out_path}/{sample}_" + config["org"]  + "/star_aligned/Aligned.sortedByCoord.out.bam",
         sj_file = "{out_path}/{sample}_" + config["org"] + "/star_aligned/SJ.out.tab"
-    conda: "../envs/himer_align.yaml"
+    conda: "star_env"
     resources:
             mem_mb=64000
     threads: 4
