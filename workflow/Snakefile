@@ -40,7 +40,7 @@ rule run_multiqc:
 	output:
 		report = "{out_path}/qc_logs/multiqc_report.html"
 	threads: workflow.cores*0.3
-	conda: "star_env"
+	conda: "pomegranate"
 	shell:
 		"multiqc {wildcards.out_path}/qc_logs --force -o {wildcards.out_path}/qc_logs"
 
