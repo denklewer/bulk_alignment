@@ -3,7 +3,7 @@ Bulk alingment pipeline used in Itaconate study. I used `snakemake/snakemake:v7.
 To repeat alignment you need fastqc files (https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE277689)  
 1. Modify `config.yml` to adjust file locations.
 2. Check that all snakemake files use proper file names as input.
-3. Activate conda star_env  with `conda activate star_env`
+3. Activate conda himer_align environment with `conda activate himer_align`
 4. Run pipeline with default snakemake run command in workflow directory `snakemake --cores  4`  (or change number of cores to available for you)
 
 
