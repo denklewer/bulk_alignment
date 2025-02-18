@@ -1,4 +1,4 @@
-Bulk alingment pipeline used in Itaconate study. I used `snakemake/snakemake:v7.30.0"` docker image to execute it. 
+Bulk alingment pipeline used in Itaconate study. I used `snakemake/snakemake:v7.30.0` docker image to execute it. 
 
 To repeat alignment you need fastqc files (https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE277689)  
 1. Modify `config.yml` to adjust file locations.
