@@ -4,7 +4,7 @@ To repeat alignment you need fastqc files (https://www.ncbi.nlm.nih.gov/geo/quer
 1. Modify `config.yml` to adjust file locations.
 2. Check that all snakemake files use proper file names as input.
 3. Activate conda star_env  with `conda activate star_env`
-4. Run pipeline with default snakemake run command  `snakemake --cores  4`  (or change number of cores to available for you)
+4. Run pipeline with default snakemake run command in workflow directory `snakemake --cores  4`  (or change number of cores to available for you)
 
 
 To run R analysis notebook specified in `scripts` directory you will need to create your own R environment and install all the packages mentioned in scripts ( I used R 4.3.0 ). 
