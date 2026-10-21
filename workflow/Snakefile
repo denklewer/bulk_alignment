@@ -1,7 +1,9 @@
 configfile : "config/config.yaml"
 
 def get_all_samples_counts(wildcards):
-	existing_samples = glob_wildcards(os.path.join(config["paths"]["data_folder"], "{id,[^_]+}_1.fq.gz")).id
+	print("current data path", config["paths"]["data_folder"])
+	existing_samples = glob_wildcards(os.path.join(config["paths"]["data_folder"], "{sample}.fastq.gz")).sample
+	print("samples to calculate counts:", existing_samples)
 	res = expand(
 		config["paths"]["out_dir"] + "/{current_sample}_"+ config["org"] +"/counts/counts.txt",
 		current_sample = existing_samples
@@ -14,29 +16,24 @@ rule all:
 
 
 def get_files_for_multiqc(wildcards):
-	existing_samples = glob_wildcards(os.path.join(config["paths"]["data_folder"], "{id,[^_]+}_1.fq.gz")).id
-	#gw = glob_wildcards(os.path.join(config["paths"]["data_folder"], "{sample}_R1_001.fastq.gz"))
-	#infer_files = expand("{out_path}/qc_logs/rseqc/{sample}_" + "_".join(config["orgs"]) + "/mouse_infer_experiment.txt",
-	#	out_path = wildcards.out_path,
-	#	sample = gw.sample
-	#	)
+	existing_samples = glob_wildcards(os.path.join(config["paths"]["data_folder"], "{sample}.fastq.gz")).sample
+	print("Found samples", existing_samples)
 	infer_files = expand("{out_path}/qc_logs/rseqc/{sample}_" + config["org"] + "/infer_experiment.txt",
 	       out_path = wildcards.out_path,
 	       sample = existing_samples
                )
-	fastqc_files = expand("{out_path}/qc_logs/fastqc/{sample}_{n}_fastqc.html",
+	fastqc_files = expand("{out_path}/qc_logs/fastqc/{sample}_fastqc.html",
 		out_path = wildcards.out_path,
-		sample=existing_samples,
-		n=[1,2])
+		sample=existing_samples)
 	cov_genes = expand("{out_path}/qc_logs/rseqc/{sample}_{org_string}/{sample}_{org_string}.geneBodyCoverage.txt",
 		out_path = wildcards.out_path,
 		sample=existing_samples,
 		org_string=config["org"])
 	return infer_files + fastqc_files + cov_genes
+	
 rule run_multiqc:
 	input:
-		get_files_for_multiqc#,
-		#gene_conv = rules.geneBody_coverage.output.gene_covr
+		get_files_for_multiqc
 	output:
 		report = "{out_path}/qc_logs/multiqc_report.html"
 	threads: workflow.cores*0.3

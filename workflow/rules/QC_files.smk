@@ -2,7 +2,7 @@ configfile : "config/config.yaml"
 import os.path
 rule use_fastqc:
 	input:
-		fasta_file = config["paths"]["data_folder"] + "/{fasta}.fq.gz"
+		fasta_file = config["paths"]["data_folder"] + "/{fasta}.fastq.gz"
 	output:
 		fastqc_report = "{out_path}/qc_logs/fastqc/{fasta}_fastqc.html"
 	threads: workflow.cores*0.3
@@ -21,7 +21,7 @@ rule generate_bed_file:
 rule rseqc_infer_experiment:
 	input:
 		bam_file = "{out_path}/{sample}_" + config["org"]  + "/star_aligned/Aligned.sortedByCoord.out.bam",
-		bed_file = rules.generate_bed_file.output.bed_file
+		bed_file = config["paths"]["genome_files"][config["org"]]["bed"]
 	output:
 		infered = "{out_path}/qc_logs/rseqc/{sample}_"+  config["org"] +"/infer_experiment.txt"
 	threads: workflow.cores*0.3
@@ -44,7 +44,7 @@ rule geneBody_coverage:
 	input:
 		bam_file = "{out_path}/{sample}_" + config["org"]  + "/star_aligned/Aligned.sortedByCoord.out.bam",
 		bai_file= "{out_path}/{sample}_" + config["org"]  + "/star_aligned/Aligned.sortedByCoord.out.bam.bai",
-		bed_file = rules.generate_bed_file.output.bed_file
+		bed_file = config["paths"]["genome_files"][config["org"]]["bed"]
 	output:
 		gene_covr = "{out_path}/qc_logs/rseqc/{sample}_"+  config["org"] +"/" + "{sample}_"+  config["org"] + ".geneBodyCoverage.txt"
 	params:

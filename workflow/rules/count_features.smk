@@ -11,4 +11,4 @@ rule featureCounts:
     conda: "star_env"
     shell:
  #       "featureCounts -p --extraAttributes gene_name -t gene -g gene_id  -T {threads}  -a {input.gtf_file} -o {output.counts} {input.sorted_bam} --byReadGroup"
-        "featureCounts -p --extraAttributes gene_name  -g gene_id  -T {threads}  -a {input.gtf_file} -o {output.counts} {input.sorted_bam}"
+        "featureCounts --extraAttributes gene_name  -t exon -g transcript_id   -T {threads}  -a {input.gtf_file} -o {output.counts} {input.sorted_bam}"

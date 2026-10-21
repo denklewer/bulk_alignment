@@ -2,20 +2,21 @@ org: "mouse" #"human"
 mate_length: 150 
 paths:
         bb_tools: "/storage1/fs1/martyomov/Active/IndividualBackUps/maksim/tools/bbtools/bbmap"
-        data_folder: "/storage1/fs1/martyomov/Active/collaborations/denisk/250117_Merlin_Johana/raw_data" # path to your fastq files
-        result_folder: "/storage1/fs1/martyomov/Active/collaborations/denisk/250117_Merlin_Johana/alignment_result"
-        out_dir: "/storage1/fs1/martyomov/Active/collaborations/denisk/250117_Merlin_Johana"
+        data_folder: "/storage1/fs1/martyomov/Active/collaborations/denisk/2026_Hussein/ID8_ID8-CPR_RNAseq/raw_data" # path to your fastq files
+        result_folder: "/storage1/fs1/martyomov/Active/collaborations/denisk/2026_Hussein/ID8_ID8-CPR_RNAseq/alignment_result"
+        out_dir: "/storage1/fs1/martyomov/Active/collaborations/denisk/2026_Hussein/ID8_ID8-CPR_RNAseq"
         genome_files:
                 human:
                         ref: "/scratch1/fs1/martyomov/maksim/permanent/scn-pipeline_storage_2/resources/cellranger/hs/fasta/genome.fa"
                         gtf: "/scratch1/fs1/martyomov/maksim/permanent/scn-pipeline_storage_2/resources/cellranger/hs/genes/genes.gtf"
                 mouse:
-                        ref: "/scratch1/fs1/martyomov/maksim/permanent/scn-pipeline_storage_2/resources/cellranger/mm/fasta/genome.fa"
-                        gtf: "/scratch1/fs1/martyomov/maksim/permanent/scn-pipeline_storage_2/resources/cellranger/mm/genes/genes.gtf"
+                        ref: "/storage1/fs1/martyomov/Active/References/Mouse/GRCm38.p6_ncbi/ncbi_dataset/data/GCF_000001635.26/GCF_000001635.26_GRCm38.p6_genomic.fna"
+                        gtf: "/storage1/fs1/martyomov/Active/References/Mouse/GRCm38.p6_ncbi/ncbi_dataset/data/GCF_000001635.26/genomic.gtf"
+                        bed: "/storage1/fs1/martyomov/Active/References/Mouse/GRCm38.p6_ncbi/ncbi_dataset/data/GCF_000001635.26/genomic.bed"
 
         star_preprocessed_files:
                 human:
                         sjdbList:  "/scratch1/fs1/martyomov/maksim/permanent/scn-pipeline_storage_2/resources/star/hs/sjdbList.fromGTF.out.tab"
                 mouse:
-                        sjdbList:  "/scratch1/fs1/martyomov/maksim/permanent/scn-pipeline_storage_2/resources/star/mm/sjdbList.fromGTF.out.tab"
+                        sjdbList:  "/storage1/fs1/martyomov/Active/References/Mouse/GRCm38.p6_ncbi/ncbi_dataset/data/GCF_000001635.26/sjdbList.fromGTF.out.tab"
 
